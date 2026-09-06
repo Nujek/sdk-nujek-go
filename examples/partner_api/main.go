@@ -1,9 +1,10 @@
 // Example penggunaan seluruh endpoint partner API.
 //
 // Jalankan dengan:
-//   CLIENT_API_BASE_URL=https://api.example.com \
-//   CLIENT_API_KEY=... CLIENT_API_SECRET=... \
-//   go run ./examples/partner_api
+//
+//	CLIENT_API_BASE_URL=https://api.example.com \
+//	CLIENT_API_KEY=... CLIENT_API_SECRET=... \
+//	go run ./examples/partner_api
 package main
 
 import (
@@ -13,11 +14,15 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/Nujek/sdk-nujek-go/pkg/client"
 )
 
 func main() {
+	if err := loadDotEnv(".env"); err != nil {
+		log.Printf("warning: .env tidak dimuat: %v", err)
+	}
 	ctx := context.Background()
 	api, err := client.New(os.Getenv("CLIENT_API_BASE_URL"), os.Getenv("CLIENT_API_KEY"), os.Getenv("CLIENT_API_SECRET"))
 	if err != nil {
@@ -32,9 +37,10 @@ func main() {
 	printJSON("register", registered)
 
 	pricing, message, err := api.PricingPreview(ctx, client.PricingPreviewParams{
-		"service_id": {"1"},
-		"origin_lat": {"-7.250445"}, "origin_long": {"112.768845"},
-		"destination_lat": {"-7.260000"}, "destination_long": {"112.780000"},
+		"service_id":     {"1"},
+		"sub_service_id": {"1"},
+		"regency_id":     {"7171"},
+		"distance_km":    {"5.5"},
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -87,6 +93,32 @@ func main() {
 		}
 		fmt.Printf("review driver (%s): %s\n", message, review)
 	}
+}
+
+// loadDotEnv membaca format sederhana KEY=VALUE tanpa menimpa environment
+// variable yang sudah diberikan dari shell atau CI.
+func loadDotEnv(path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	for _, line := range strings.Split(string(raw), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		line = strings.TrimPrefix(line, "export ")
+		key, value, ok := strings.Cut(line, "=")
+		if !ok || strings.TrimSpace(key) == "" {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.Trim(strings.TrimSpace(value), "\"'")
+		if _, exists := os.LookupEnv(key); !exists {
+			_ = os.Setenv(key, value)
+		}
+	}
+	return nil
 }
 
 func printJSON(name string, value any) {
