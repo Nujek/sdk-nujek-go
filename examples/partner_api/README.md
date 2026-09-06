@@ -4,12 +4,12 @@ Example ini menunjukkan semua method SDK:
 
 | Method | Endpoint |
 | --- | --- |
-| `Register` | `POST {{baseUrl}}/api/client/register` |
-| `PricingPreview` | `GET {{baseUrl}}/api/client/pricing/preview` |
-| `RoutingDistance` | `POST {{baseUrl}}/api/client/routing/distance` |
-| `CreateOrder` | `POST {{baseUrl}}/api/client/orders` |
-| `CancelOrder` | `POST {{baseUrl}}/api/client/orders/{order_uuid}/cancel` |
-| `ReviewDriver` | `POST {{baseUrl}}/api/client/orders/{order_uuid}/review-driver` |
+| `Register` | `POST {{baseUrl}}/register` |
+| `PricingPreview` | `GET {{baseUrl}}/pricing` |
+| `RoutingDistance` | `POST {{baseUrl}}/routing` |
+| `CreateOrder` | `POST {{baseUrl}}/orders` |
+| `CancelOrder` | `POST {{baseUrl}}/orders/{order_uuid}/cancel` |
+| `ReviewDriver` | `POST {{baseUrl}}/orders/{order_uuid}/review-driver` |
 
 Untuk Postman, `baseUrl` adalah server example lokal: `http://localhost:8088`.
 Server example membaca credentials upstream dari `.env`, sehingga Postman tidak
@@ -69,7 +69,7 @@ Server ini meneruskan request ke Partner API dengan signature dari SDK.
 ### Register dari Postman
 
 ```http
-POST http://localhost:8088/api/client/register
+POST http://localhost:8088/register
 Content-Type: application/json
 ```
 
@@ -84,13 +84,13 @@ Content-Type: application/json
 ### Pricing preview dari Postman
 
 ```http
-GET http://localhost:8088/api/client/pricing/preview?service_id=1&sub_service_id=1&regency_id=7171&distance_km=5.5
+GET http://localhost:8088/pricing?service_id=1&sub_service_id=1&regency_id=7171&distance_km=5.5
 ```
 
 ### Routing distance dari Postman
 
 ```http
-POST http://localhost:8088/api/client/routing/distance
+POST http://localhost:8088/routing
 Content-Type: application/json
 ```
 
