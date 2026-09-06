@@ -8,6 +8,8 @@ Example ini menunjukkan semua method SDK:
 | `PricingPreview` | `GET {{baseUrl}}/pricing` |
 | `RoutingDistance` | `POST {{baseUrl}}/routing` |
 | `CreateOrder` | `POST {{baseUrl}}/orders` |
+| `ListOrders` | `GET {{baseUrl}}/orders` |
+| `ShowOrder` | `GET {{baseUrl}}/orders/{order_uuid}` |
 | `CancelOrder` | `POST {{baseUrl}}/orders/{order_uuid}/cancel` |
 | `ReviewDriver` | `POST {{baseUrl}}/orders/{order_uuid}/review-driver` |
 
@@ -104,7 +106,7 @@ Content-Type: application/json
 }
 ```
 
-Route lokal lainnya adalah `POST /orders`, `POST /orders/{order_uuid}/cancel`,
+Route lokal lainnya adalah `GET /orders`, `GET /orders/{order_uuid}`, `POST /orders`, `POST /orders/{order_uuid}/cancel`,
 dan `POST /orders/{order_uuid}/review-driver`; body-nya sama dengan contoh
 SDK di bawah.
 

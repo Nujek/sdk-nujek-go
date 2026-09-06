@@ -34,6 +34,8 @@ func main() {
 	mux.HandleFunc("GET /pricing", h.pricingPreview)
 	mux.HandleFunc("POST /routing", h.routingDistance)
 	mux.HandleFunc("POST /orders", h.createOrder)
+	mux.HandleFunc("GET /orders", h.listOrders)
+	mux.HandleFunc("GET /orders/{orderUUID}", h.showOrder)
 	mux.HandleFunc("POST /orders/{orderUUID}/cancel", h.cancelOrder)
 	mux.HandleFunc("POST /orders/{orderUUID}/review-driver", h.reviewDriver)
 
@@ -84,6 +86,24 @@ func (s *server) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, message, err := s.api.CreateOrder(r.Context(), payload)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": result, "message": message})
+}
+
+func (s *server) listOrders(w http.ResponseWriter, r *http.Request) {
+	result, message, err := s.api.ListOrders(r.Context(), client.PricingPreviewParams(r.URL.Query()))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": result, "message": message})
+}
+
+func (s *server) showOrder(w http.ResponseWriter, r *http.Request) {
+	result, message, err := s.api.ShowOrder(r.Context(), r.PathValue("orderUUID"))
 	if err != nil {
 		writeError(w, err)
 		return

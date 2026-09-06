@@ -157,6 +157,18 @@ func (c *Client) CreateOrder(ctx context.Context, payload any) (json.RawMessage,
 	return response.Data, response.Message, err
 }
 
+func (c *Client) ListOrders(ctx context.Context, params PricingPreviewParams) (json.RawMessage, string, error) {
+	var response Response[json.RawMessage]
+	err := c.request(ctx, http.MethodGet, "/orders", url.Values(params), nil, &response)
+	return response.Data, response.Message, err
+}
+
+func (c *Client) ShowOrder(ctx context.Context, orderUUID string) (json.RawMessage, string, error) {
+	var response Response[json.RawMessage]
+	err := c.request(ctx, http.MethodGet, "/orders/"+url.PathEscape(orderUUID), nil, nil, &response)
+	return response.Data, response.Message, err
+}
+
 func (c *Client) CancelOrder(ctx context.Context, orderUUID string, request *CancelRequest) (string, error) {
 	var response Response[json.RawMessage]
 	err := c.postJSON(ctx, "/orders/"+url.PathEscape(orderUUID)+"/cancel", request, &response)

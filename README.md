@@ -18,6 +18,8 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.6
 | `PricingPreview` | `GET /api/client/pricing/preview` |
 | `RoutingDistance` | `POST /api/client/routing/distance` |
 | `CreateOrder` | `POST /api/client/orders` |
+| `ListOrders` | `GET /api/client/orders` |
+| `ShowOrder` | `GET /api/client/orders/{order_uuid}` |
 | `CancelOrder` | `POST /api/client/orders/{order_uuid}/cancel` |
 | `ReviewDriver` | `POST /api/client/orders/{order_uuid}/review-driver` |
 
