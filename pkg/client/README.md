@@ -24,5 +24,9 @@ Method yang tersedia: `Register`, `PricingPreview`, `RoutingDistance`,
 `CreateOrder`, `CancelOrder`, dan `ReviewDriver`. `CreateOrder` menerima object
 JSON apa pun selama memuat `customer_uuid` dan field order yang diwajibkan API.
 
+Contoh lengkap seluruh method tersedia di [`examples/partner_api`](../../examples/partner_api).
+Jalankan dengan `CLIENT_API_BASE_URL`, `CLIENT_API_KEY`, dan `CLIENT_API_SECRET`;
+`ORDER_JSON`, `ORDER_UUID`, dan `REVIEW_ORDER_UUID` bersifat opsional.
+
 `New` menerima `WithHTTPClient`, `WithClock`, dan `WithNonceGenerator` untuk
 custom transport atau testing.
