@@ -1,130 +1,184 @@
-// Example penggunaan seluruh endpoint partner API.
-//
-// Jalankan dengan:
-//
-//	CLIENT_API_BASE_URL=https://api.example.com \
-//	CLIENT_API_KEY=... CLIENT_API_SECRET=... \
-//	go run ./examples/partner_api
+// Example HTTP server untuk mengetes seluruh Partner API SDK melalui Postman.
 package main
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
+	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/Nujek/sdk-nujek-go/pkg/client"
 )
 
+type server struct{ api *client.Client }
+
 func main() {
-	if err := loadDotEnv(".env"); err != nil {
+	if err := loadDotEnv(".env"); err != nil && !errors.Is(err, os.ErrNotExist) {
 		log.Printf("warning: .env tidak dimuat: %v", err)
 	}
-	ctx := context.Background()
 	api, err := client.New(os.Getenv("CLIENT_API_BASE_URL"), os.Getenv("CLIENT_API_KEY"), os.Getenv("CLIENT_API_SECRET"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Register customer (idempotent untuk client yang sama).
-	registered, err := api.Register(ctx, os.Getenv("CUSTOMER_NAME"), os.Getenv("CUSTOMER_EMAIL"), os.Getenv("CUSTOMER_PHONE"))
-	if err != nil {
-		log.Fatal(err)
+	port := os.Getenv("EXAMPLE_PORT")
+	if port == "" {
+		port = "8088"
 	}
-	printJSON("register", registered)
+	h := &server{api: api}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", h.health)
+	mux.HandleFunc("POST /register", h.register)
+	mux.HandleFunc("GET /pricing/preview", h.pricingPreview)
+	mux.HandleFunc("POST /routing/distance", h.routingDistance)
+	mux.HandleFunc("POST /orders", h.createOrder)
+	mux.HandleFunc("POST /orders/{orderUUID}/cancel", h.cancelOrder)
+	mux.HandleFunc("POST /orders/{orderUUID}/review-driver", h.reviewDriver)
 
-	pricing, message, err := api.PricingPreview(ctx, client.PricingPreviewParams{
-		"service_id":     {"1"},
-		"sub_service_id": {"1"},
-		"regency_id":     {"7171"},
-		"distance_km":    {"5.5"},
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("pricing (%s): %s\n", message, pricing)
-
-	route, err := api.RoutingDistance(ctx, client.RoutingRequest{
-		Mode: "motorcycle",
-		Routes: []client.Waypoint{
-			{Latitude: -7.250445, Longitude: 112.768845},
-			{Latitude: -7.260000, Longitude: 112.780000},
-		},
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	printJSON("routing", route)
-
-	// ORDER_JSON harus berisi field order sesuai kontrak backend. customer_uuid
-	// ditambahkan oleh contoh ini agar tidak perlu menduplikasi struktur order.
-	if raw := os.Getenv("ORDER_JSON"); raw != "" {
-		var order map[string]any
-		if err := json.Unmarshal([]byte(raw), &order); err != nil {
-			log.Fatalf("ORDER_JSON tidak valid: %v", err)
-		}
-		order["customer_uuid"] = os.Getenv("CUSTOMER_UUID")
-		created, message, err := api.CreateOrder(ctx, order)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("create order (%s): %s\n", message, created)
-	}
-
-	if orderUUID := os.Getenv("ORDER_UUID"); orderUUID != "" {
-		message, err := api.CancelOrder(ctx, orderUUID, &client.CancelRequest{Reason: "Dibatalkan dari contoh SDK"})
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("cancel order: %s\n", message)
-	}
-
-	if orderUUID := os.Getenv("REVIEW_ORDER_UUID"); orderUUID != "" {
-		rating, _ := strconv.Atoi(os.Getenv("REVIEW_RATING"))
-		if rating == 0 {
-			rating = 5
-		}
-		review, message, err := api.ReviewDriver(ctx, orderUUID, client.ReviewRequest{Rating: rating, Comment: os.Getenv("REVIEW_COMMENT")})
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("review driver (%s): %s\n", message, review)
-	}
+	address := ":" + port
+	log.Printf("Partner API SDK example listening on http://localhost:%s", port)
+	log.Printf("Postman base URL: http://localhost:%s", port)
+	log.Fatal(http.ListenAndServe(address, logging(mux)))
 }
 
-// loadDotEnv membaca format sederhana KEY=VALUE tanpa menimpa environment
-// variable yang sudah diberikan dari shell atau CI.
+func (s *server) health(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+func (s *server) register(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+		Phone string `json:"phone"`
+	}
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	result, err := s.api.Register(r.Context(), payload.Name, payload.Email, payload.Phone)
+	writeResult(w, result, err)
+}
+
+func (s *server) pricingPreview(w http.ResponseWriter, r *http.Request) {
+	result, message, err := s.api.PricingPreview(r.Context(), client.PricingPreviewParams(r.URL.Query()))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": result, "message": message})
+}
+
+func (s *server) routingDistance(w http.ResponseWriter, r *http.Request) {
+	var payload client.RoutingRequest
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	result, err := s.api.RoutingDistance(r.Context(), payload)
+	writeResult(w, result, err)
+}
+
+func (s *server) createOrder(w http.ResponseWriter, r *http.Request) {
+	var payload map[string]any
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	result, message, err := s.api.CreateOrder(r.Context(), payload)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": result, "message": message})
+}
+
+func (s *server) cancelOrder(w http.ResponseWriter, r *http.Request) {
+	var payload *client.CancelRequest
+	if r.ContentLength != 0 {
+		var request client.CancelRequest
+		if !decodeJSON(w, r, &request) {
+			return
+		}
+		payload = &request
+	}
+	message, err := s.api.CancelOrder(r.Context(), r.PathValue("orderUUID"), payload)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": message})
+}
+
+func (s *server) reviewDriver(w http.ResponseWriter, r *http.Request) {
+	var payload client.ReviewRequest
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	result, message, err := s.api.ReviewDriver(r.Context(), r.PathValue("orderUUID"), payload)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": result, "message": message})
+}
+
+func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": map[string]any{"code": "INVALID_JSON", "message": err.Error()}})
+		return false
+	}
+	return true
+}
+
+func writeResult[T any](w http.ResponseWriter, result client.Response[T], err error) {
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func writeError(w http.ResponseWriter, err error) {
+	status := http.StatusBadGateway
+	var apiErr *client.APIError
+	if errors.As(err, &apiErr) {
+		status = apiErr.StatusCode
+		writeJSON(w, status, map[string]any{"error": apiErr})
+		return
+	}
+	writeJSON(w, status, map[string]any{"error": map[string]string{"code": "SDK_ERROR", "message": err.Error()}})
+}
+
+func writeJSON(w http.ResponseWriter, status int, value any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(value)
+}
+
+func logging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL.RequestURI())
+		next.ServeHTTP(w, r)
+	})
+}
+
 func loadDotEnv(path string) error {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	for _, line := range strings.Split(string(raw), "\n") {
-		line = strings.TrimSpace(line)
+		line = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "export "))
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		line = strings.TrimPrefix(line, "export ")
 		key, value, ok := strings.Cut(line, "=")
 		if !ok || strings.TrimSpace(key) == "" {
 			continue
 		}
-		key = strings.TrimSpace(key)
-		value = strings.Trim(strings.TrimSpace(value), "\"'")
-		if _, exists := os.LookupEnv(key); !exists {
-			_ = os.Setenv(key, value)
+		if _, exists := os.LookupEnv(strings.TrimSpace(key)); !exists {
+			_ = os.Setenv(strings.TrimSpace(key), strings.Trim(strings.TrimSpace(value), "\"'"))
 		}
 	}
 	return nil
-}
-
-func printJSON(name string, value any) {
-	raw, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s: %s\n", name, raw)
 }

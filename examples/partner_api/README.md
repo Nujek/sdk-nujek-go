@@ -36,7 +36,7 @@ CUSTOMER_PHONE=081234567890
 
 Jangan commit `.env`; file tersebut sudah di-ignore.
 
-## Menjalankan
+## Menjalankan server example
 
 ```bash
 set -a
@@ -45,27 +45,21 @@ set +a
 go run .
 ```
 
-Register, pricing, dan routing selalu dijalankan. Create, cancel, dan review
-hanya dijalankan bila variable terkait diisi.
+Server membuka port `8088` secara default. Gunakan `EXAMPLE_PORT` untuk port
+lain. Setelah muncul log `listening`, buka Postman dan gunakan base URL lokal:
 
-Contoh menjalankan register customer dengan nilai langsung:
-
-```bash
-CLIENT_API_BASE_URL=https://staging-api.example.com \
-CLIENT_API_KEY=client-key CLIENT_API_SECRET=client-secret \
-CUSTOMER_NAME="Budi Santoso" \
-CUSTOMER_EMAIL="budi@example.com" \
-CUSTOMER_PHONE="081234567890" \
-go run .
+```text
+http://localhost:8088
 ```
 
-Perintah tersebut mengirim request:
+Server ini meneruskan request ke Partner API dengan signature dari SDK.
+
+### Register dari Postman
 
 ```http
-POST {{baseUrl}}/api/client/register
+POST http://localhost:8088/register
+Content-Type: application/json
 ```
-
-Dengan body:
 
 ```json
 {
@@ -74,6 +68,33 @@ Dengan body:
   "phone": "081234567890"
 }
 ```
+
+### Pricing preview dari Postman
+
+```http
+GET http://localhost:8088/pricing/preview?service_id=1&sub_service_id=1&regency_id=7171&distance_km=5.5
+```
+
+### Routing distance dari Postman
+
+```http
+POST http://localhost:8088/routing/distance
+Content-Type: application/json
+```
+
+```json
+{
+  "mode": "motorcycle",
+  "routes": [
+    {"latitude": -7.250445, "longitude": 112.768845},
+    {"latitude": -7.260000, "longitude": 112.780000}
+  ]
+}
+```
+
+Route lokal lainnya adalah `POST /orders`, `POST /orders/{order_uuid}/cancel`,
+dan `POST /orders/{order_uuid}/review-driver`; body-nya sama dengan contoh
+SDK di bawah.
 
 ## Penggunaan setiap API
 
