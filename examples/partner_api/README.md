@@ -11,8 +11,9 @@ Example ini menunjukkan semua method SDK:
 | `CancelOrder` | `POST {{baseUrl}}/api/client/orders/{order_uuid}/cancel` |
 | `ReviewDriver` | `POST {{baseUrl}}/api/client/orders/{order_uuid}/review-driver` |
 
-`baseUrl` adalah URL server tanpa suffix `/api/client`, misalnya
-`https://staging-api.example.com`.
+Untuk Postman, `baseUrl` adalah server example lokal: `http://localhost:8088`.
+Server example membaca credentials upstream dari `.env`, sehingga Postman tidak
+perlu mengirim API key atau signature.
 
 ## Persiapan
 
@@ -29,12 +30,23 @@ Isi minimal `.env`:
 CLIENT_API_BASE_URL=https://staging-api.example.com
 CLIENT_API_KEY=client-key-dari-admin
 CLIENT_API_SECRET=client-secret-dari-admin
-CUSTOMER_NAME=Budi
-CUSTOMER_EMAIL=budi@example.com
-CUSTOMER_PHONE=081234567890
+EXAMPLE_PORT=8088
 ```
 
-Jangan commit `.env`; file tersebut sudah di-ignore.
+Request body customer/order dikirim dari Postman. Jangan commit `.env`; file
+tersebut sudah di-ignore.
+
+## Import ke Postman
+
+Import file [`openapi.json`](./openapi.json) melalui **Import → File**. Setelah
+diimpor, buat environment Postman dengan variable berikut:
+
+```text
+baseUrl       = http://localhost:8088
+```
+
+Jalankan `go run .`, lalu jalankan request yang diimpor. Example akan meneruskan
+request ke upstream dan menambahkan signature menggunakan credentials dari `.env`.
 
 ## Menjalankan server example
 
@@ -57,7 +69,7 @@ Server ini meneruskan request ke Partner API dengan signature dari SDK.
 ### Register dari Postman
 
 ```http
-POST http://localhost:8088/register
+POST http://localhost:8088/api/client/register
 Content-Type: application/json
 ```
 
@@ -72,13 +84,13 @@ Content-Type: application/json
 ### Pricing preview dari Postman
 
 ```http
-GET http://localhost:8088/pricing/preview?service_id=1&sub_service_id=1&regency_id=7171&distance_km=5.5
+GET http://localhost:8088/api/client/pricing/preview?service_id=1&sub_service_id=1&regency_id=7171&distance_km=5.5
 ```
 
 ### Routing distance dari Postman
 
 ```http
-POST http://localhost:8088/routing/distance
+POST http://localhost:8088/api/client/routing/distance
 Content-Type: application/json
 ```
 

@@ -30,12 +30,12 @@ func main() {
 	h := &server{api: api}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", h.health)
-	mux.HandleFunc("POST /register", h.register)
-	mux.HandleFunc("GET /pricing/preview", h.pricingPreview)
-	mux.HandleFunc("POST /routing/distance", h.routingDistance)
-	mux.HandleFunc("POST /orders", h.createOrder)
-	mux.HandleFunc("POST /orders/{orderUUID}/cancel", h.cancelOrder)
-	mux.HandleFunc("POST /orders/{orderUUID}/review-driver", h.reviewDriver)
+	mux.HandleFunc("POST /api/client/register", h.register)
+	mux.HandleFunc("GET /api/client/pricing/preview", h.pricingPreview)
+	mux.HandleFunc("POST /api/client/routing/distance", h.routingDistance)
+	mux.HandleFunc("POST /api/client/orders", h.createOrder)
+	mux.HandleFunc("POST /api/client/orders/{orderUUID}/cancel", h.cancelOrder)
+	mux.HandleFunc("POST /api/client/orders/{orderUUID}/review-driver", h.reviewDriver)
 
 	address := ":" + port
 	log.Printf("Partner API SDK example listening on http://localhost:%s", port)
