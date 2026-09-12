@@ -12,6 +12,8 @@ Example ini menunjukkan semua method SDK:
 | `ShowOrder` | `GET {{baseUrl}}/orders/{order_uuid}` |
 | `CancelOrder` | `POST {{baseUrl}}/orders/{order_uuid}/cancel` |
 | `ReviewDriver` | `POST {{baseUrl}}/orders/{order_uuid}/review-driver` |
+| `ListChatMessages` | `GET {{baseUrl}}/orders/{order_uuid}/chat/messages` |
+| `SendChatMessage` | `POST {{baseUrl}}/orders/{order_uuid}/chat/messages` |
 
 Untuk Postman, `baseUrl` adalah server example lokal: `http://localhost:8088`.
 Server example membaca credentials upstream dari `.env`, sehingga Postman tidak
@@ -107,7 +109,8 @@ Content-Type: application/json
 ```
 
 Route lokal lainnya adalah `GET /orders`, `GET /orders/{order_uuid}`, `POST /orders`, `POST /orders/{order_uuid}/cancel`,
-dan `POST /orders/{order_uuid}/review-driver`; body-nya sama dengan contoh
+`POST /orders/{order_uuid}/review-driver`, serta `GET`/`POST
+`/orders/{order_uuid}/chat/messages`; body-nya sama dengan contoh
 SDK di bawah.
 
 ## Penggunaan setiap API
@@ -187,6 +190,39 @@ result, message, err := api.ReviewDriver(ctx, orderUUID, client.ReviewRequest{
 ```
 
 Rating harus 1–5 dan order harus sudah selesai.
+
+### Chat customer dan driver
+
+```go
+messages, err := api.ListChatMessages(ctx, orderUUID, client.ChatMessagesParams{
+    Page: 1,
+    Limit: 50,
+})
+
+sent, err := api.SendChatMessage(ctx, orderUUID, client.SendChatMessageRequest{
+    Message: "Driver, mohon ke pickup",
+    MessageType: "text",
+})
+```
+
+Daftar pesan diurutkan dari pesan terbaru. Nilai pagination `0` menggunakan
+default API. Partner hanya dapat mengakses order miliknya dan percakapan
+`customer_driver`.
+
+Pesan baru dari driver dikirim ke URL webhook partner sebagai event
+`chat.message`. Verifikasi signature menggunakan raw body sebelum parsing:
+
+```go
+body, _ := io.ReadAll(r.Body)
+valid := client.VerifyWebhookSignature(
+    webhookSecret,
+    r.Header.Get("X-Webhook-Timestamp"),
+    r.Header.Get("X-Webhook-Id"),
+    body,
+    r.Header.Get("X-Webhook-Signature"),
+)
+event, err := client.ParseChatMessageWebhook(body)
+```
 
 ## Variable opsional
 

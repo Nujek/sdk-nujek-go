@@ -4,9 +4,11 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/Nujek/sdk-nujek-go/pkg/client"
@@ -38,6 +40,8 @@ func main() {
 	mux.HandleFunc("GET /orders/{orderUUID}", h.showOrder)
 	mux.HandleFunc("POST /orders/{orderUUID}/cancel", h.cancelOrder)
 	mux.HandleFunc("POST /orders/{orderUUID}/review-driver", h.reviewDriver)
+	mux.HandleFunc("GET /orders/{orderUUID}/chat/messages", h.listChatMessages)
+	mux.HandleFunc("POST /orders/{orderUUID}/chat/messages", h.sendChatMessage)
 
 	address := ":" + port
 	log.Printf("Partner API SDK example listening on http://localhost:%s", port)
@@ -139,6 +143,42 @@ func (s *server) reviewDriver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"data": result, "message": message})
+}
+
+func (s *server) listChatMessages(w http.ResponseWriter, r *http.Request) {
+	page, err := optionalUintQuery(r, "page")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": map[string]string{"code": "INVALID_QUERY", "message": err.Error()}})
+		return
+	}
+	limit, err := optionalUintQuery(r, "limit")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": map[string]string{"code": "INVALID_QUERY", "message": err.Error()}})
+		return
+	}
+	result, err := s.api.ListChatMessages(r.Context(), r.PathValue("orderUUID"), client.ChatMessagesParams{Page: page, Limit: limit})
+	writeResult(w, result, err)
+}
+
+func (s *server) sendChatMessage(w http.ResponseWriter, r *http.Request) {
+	var payload client.SendChatMessageRequest
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	result, err := s.api.SendChatMessage(r.Context(), r.PathValue("orderUUID"), payload)
+	writeResult(w, result, err)
+}
+
+func optionalUintQuery(r *http.Request, name string) (uint64, error) {
+	value := strings.TrimSpace(r.URL.Query().Get(name))
+	if value == "" {
+		return 0, nil
+	}
+	parsed, err := strconv.ParseUint(value, 10, 64)
+	if err != nil || parsed == 0 {
+		return 0, fmt.Errorf("%s harus berupa bilangan bulat lebih dari nol", name)
+	}
+	return parsed, nil
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {

@@ -2,12 +2,12 @@
 
 SDK Go untuk Partner API Nujek. SDK otomatis membuat signature HMAC-SHA256
 dengan header `X-Client-Key`, `X-Timestamp`, `X-Nonce`, dan `X-Signature`.
-Rilis terbaru: `v0.1.6`.
+Rilis terbaru: `v0.1.9`.
 
 ## Instalasi
 
 ```bash
-go get github.com/Nujek/sdk-nujek-go@v0.1.6
+go get github.com/Nujek/sdk-nujek-go@v0.1.9
 ```
 
 ## Method SDK dan endpoint upstream
@@ -22,6 +22,8 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.6
 | `ShowOrder` | `GET /api/client/orders/{order_uuid}` |
 | `CancelOrder` | `POST /api/client/orders/{order_uuid}/cancel` |
 | `ReviewDriver` | `POST /api/client/orders/{order_uuid}/review-driver` |
+| `ListChatMessages` | `GET /api/client/orders/{order_uuid}/chat/customer_driver/messages` |
+| `SendChatMessage` | `POST /api/client/orders/{order_uuid}/chat/customer_driver/messages` |
 
 ```go
 import (
@@ -36,6 +38,19 @@ result, err := api.Register(context.Background(), "Budi", "budi@example.com", "0
 `CreateOrder` menerima `map[string]any` agar field order baru tetap kompatibel.
 `PricingPreview` mengembalikan data pricing sebagai `json.RawMessage`.
 
+```go
+messages, err := api.ListChatMessages(ctx, orderUUID, client.ChatMessagesParams{
+    Page: 1, Limit: 50,
+})
+sent, err := api.SendChatMessage(ctx, orderUUID, client.SendChatMessageRequest{
+    Message: "Driver, mohon ke pickup",
+    MessageType: "text",
+})
+```
+
+Pesan driver diteruskan ke webhook partner sebagai event `chat.message`. Gunakan
+`VerifyWebhookSignature` pada raw request body sebelum `ParseChatMessageWebhook`.
+
 ## Example untuk Postman
 
 Example HTTP lokal tersedia di [`examples/partner_api`](./examples/partner_api).
@@ -49,6 +64,8 @@ Endpoint lokal dibuat singkat dan sama dengan SDK Node.js:
 | POST | `/orders` |
 | POST | `/orders/{order_uuid}/cancel` |
 | POST | `/orders/{order_uuid}/review-driver` |
+| GET | `/orders/{order_uuid}/chat/messages` |
+| POST | `/orders/{order_uuid}/chat/messages` |
 
 Jalankan:
 

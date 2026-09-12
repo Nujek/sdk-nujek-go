@@ -21,8 +21,13 @@ route, err := partner.RoutingDistance(ctx, client.RoutingRequest{
 ```
 
 Method yang tersedia: `Register`, `PricingPreview`, `RoutingDistance`,
-`CreateOrder`, `CancelOrder`, dan `ReviewDriver`. `CreateOrder` menerima object
+`CreateOrder`, `ListOrders`, `ShowOrder`, `CancelOrder`, `ReviewDriver`,
+`ListChatMessages`, dan `SendChatMessage`. `CreateOrder` menerima object
 JSON apa pun selama memuat `customer_uuid` dan field order yang diwajibkan API.
+
+Chat Partner API menggunakan percakapan `customer_driver`. Pesan baru dari
+driver dikirim melalui webhook event `chat.message`; SDK menyediakan
+`VerifyWebhookSignature` dan `ParseChatMessageWebhook` untuk memprosesnya.
 
 Contoh lengkap seluruh method tersedia di [`examples/partner_api`](../../examples/partner_api).
 Jalankan dengan `CLIENT_API_BASE_URL`, `CLIENT_API_KEY`, dan `CLIENT_API_SECRET`;
