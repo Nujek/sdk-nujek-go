@@ -33,7 +33,7 @@ func TestVerifyWebhookAtChecksSignatureAndFreshness(t *testing.T) {
 }
 
 func TestParseAndDecodeKnownWebhook(t *testing.T) {
-	body := []byte(`{"event":"order.created","occurred_at":"2026-09-10T14:37:06Z","data":{"order_uuid":"order-uuid","status":"PENDING","driver_uuid":null}}`)
+	body := []byte(`{"event":"order.created","occurred_at":"2026-09-10T14:37:06Z","data":{"order_uuid":"order-uuid","status":"BOOKING","driver_uuid":null,"booking_at":"2026-09-11T01:00:00Z"}}`)
 	event, err := ParseWebhook(body)
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +45,7 @@ func TestParseAndDecodeKnownWebhook(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data.OrderUUID != "order-uuid" || data.Status != "PENDING" || data.DriverUUID != nil {
+	if data.OrderUUID != "order-uuid" || data.Status != "BOOKING" || data.DriverUUID != nil || data.BookingAt == nil {
 		t.Fatalf("unexpected payload: %+v", data)
 	}
 }

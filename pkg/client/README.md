@@ -20,10 +20,18 @@ route, err := partner.RoutingDistance(ctx, client.RoutingRequest{
 })
 ```
 
-Method yang tersedia: `Register`, `PricingPreview`, `RoutingDistance`,
+Method yang tersedia: `Register`, `PricingPreview`, `RoutingDistance`, `ReverseGeocode`,
 `CreateOrder`, `ListOrders`, `ShowOrder`, `CancelOrder`, `ReviewDriver`,
-`ListChatMessages`, dan `SendChatMessage`. `CreateOrder` menerima object
+`ListChatMessages`, `SendChatMessage`, `MarkChatRead`, dan `SendChatImage`.
+`CreateOrder` menerima object
 JSON apa pun selama memuat `customer_uuid` dan field order yang diwajibkan API.
+Jika `routes[].address` kosong atau tidak dikirim, Partner API mengisinya
+otomatis dari koordinat sebelum menyimpan order.
+
+Contoh response sukses dan error untuk setiap method tersedia di
+[`API_RESPONSES.md`](../../API_RESPONSES.md). Dokumentasi tersebut juga
+menjelaskan method yang mengembalikan tipe konkret dan method yang
+mengembalikan `json.RawMessage`.
 
 Chat Partner API menggunakan percakapan `customer_driver`. Pesan baru dari
 driver dikirim melalui webhook event `chat.message`; SDK menyediakan

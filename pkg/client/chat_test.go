@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"testing"
@@ -91,6 +92,76 @@ func TestSendChatMessageRejectsInvalidInput(t *testing.T) {
 	}
 	if _, err := c.SendChatMessage(context.Background(), "order-uuid", SendChatMessageRequest{}); err == nil {
 		t.Fatal("expected empty message error")
+	}
+}
+
+func TestMarkChatRead(t *testing.T) {
+	transport := &chatCaptureTransport{responseBody: `{"data":{"last_read_message_id":51},"message":"Chat berhasil ditandai telah dibaca"}`}
+	c := newChatTestClient(t, transport)
+
+	response, err := c.MarkChatRead(context.Background(), "order-uuid", MarkChatReadRequest{LastReadMessageID: 51})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := transport.request.URL.Path, "/api/client/orders/order-uuid/chat/customer_driver/read"; got != want {
+		t.Fatalf("path = %q, want %q", got, want)
+	}
+	if transport.request.Method != http.MethodPost || response.Data.LastReadMessageID != 51 {
+		t.Fatalf("unexpected method/response: %s / %+v", transport.request.Method, response.Data)
+	}
+	var request MarkChatReadRequest
+	if err := json.NewDecoder(transport.request.Body).Decode(&request); err != nil {
+		t.Fatal(err)
+	}
+	if request.LastReadMessageID != 51 {
+		t.Fatalf("last read message ID = %d, want 51", request.LastReadMessageID)
+	}
+}
+
+func TestMarkChatReadRejectsInvalidInput(t *testing.T) {
+	c := newChatTestClient(t, &chatCaptureTransport{})
+	if _, err := c.MarkChatRead(context.Background(), "order-uuid", MarkChatReadRequest{}); err == nil {
+		t.Fatal("expected invalid message ID error")
+	}
+}
+
+func TestSendChatImage(t *testing.T) {
+	transport := &chatCaptureTransport{responseBody: `{"data":{"id":52,"sender_id":8,"sender_role":"customer","message":"Lokasi saya","message_type":"image","image_path":"chat/image.jpg","created_at":"2026-09-10 14:39:06 +00:00:00","is_read":false},"message":"Gambar chat berhasil dikirim"}`}
+	c := newChatTestClient(t, transport)
+
+	response, err := c.SendChatImage(context.Background(), "order-uuid", SendChatImageRequest{
+		FileName:    "pickup.jpg",
+		ContentType: "image/jpeg",
+		Image:       strings.NewReader("jpeg-bytes"),
+		Message:     "Lokasi saya",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := transport.request.URL.Path, "/api/client/orders/order-uuid/chat/customer_driver/images"; got != want {
+		t.Fatalf("path = %q, want %q", got, want)
+	}
+	if transport.request.Method != http.MethodPost || response.Data.MessageType != "image" {
+		t.Fatalf("unexpected method/response: %s / %+v", transport.request.Method, response.Data)
+	}
+	reader, err := multipart.NewReader(transport.request.Body, strings.TrimPrefix(transport.request.Header.Get("Content-Type"), "multipart/form-data; boundary=")).ReadForm(1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reader.Value["message"][0] != "Lokasi saya" || reader.File["file"][0].Filename != "pickup.jpg" {
+		t.Fatalf("unexpected multipart form: %+v", reader)
+	}
+}
+
+func TestSendChatImageRejectsInvalidInput(t *testing.T) {
+	c := newChatTestClient(t, &chatCaptureTransport{})
+	if _, err := c.SendChatImage(context.Background(), "order-uuid", SendChatImageRequest{}); err == nil {
+		t.Fatal("expected invalid image request error")
+	}
+	if _, err := c.SendChatImage(context.Background(), "order-uuid", SendChatImageRequest{
+		FileName: "chat.pdf", ContentType: "application/pdf", Image: strings.NewReader("pdf"),
+	}); err == nil {
+		t.Fatal("expected invalid content type error")
 	}
 }
 

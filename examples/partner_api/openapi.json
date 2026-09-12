@@ -12,20 +12,22 @@
     { "name": "Customers" },
     { "name": "Pricing" },
     { "name": "Routing" },
-    { "name": "Orders" }
+    { "name": "Geocoding" },
+    { "name": "Orders" },
+    { "name": "Chat" }
   ],
   "paths": {
-    "/api/client/register": {
+    "/register": {
       "post": {
         "tags": ["Customers"],
         "summary": "Register customer",
         "operationId": "registerCustomer",
         "parameters": [],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" }, "example": { "name": "Budi Santoso", "email": "budi@example.com", "phone": "081234567890" } } } },
-        "responses": { "200": { "description": "Customer berhasil didaftarkan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterResponse" } } } }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+        "responses": { "200": { "description": "Customer berhasil didaftarkan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterResponse" }, "example": { "data": { "uuid": "24a55c29-5be8-4381-b915-3d658685a5a8", "name": "Budi Santoso", "email": "budi@example.com", "phone": "081234567890" }, "message": "Customer berhasil didaftarkan" } } } }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/ValidationError" } }
       }
     },
-    "/api/client/pricing/preview": {
+    "/pricing": {
       "get": {
         "tags": ["Pricing"],
         "summary": "Preview harga",
@@ -40,47 +42,119 @@
           { "name": "latitude", "in": "query", "schema": { "type": "number", "format": "double" } },
           { "name": "longitude", "in": "query", "schema": { "type": "number", "format": "double" } }
         ],
-        "responses": { "200": { "description": "Estimasi harga", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericResponse" } } } }, "422": { "$ref": "#/components/responses/ValidationError" } }
+        "responses": { "200": { "description": "Estimasi harga", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericResponse" }, "example": { "data": { "service_id": 1, "service_name": "Ride", "sub_service_id": 1, "regency_id": "7171", "regency_name": "Kota Manado", "distance_km": 5.5, "base_price": 17500, "commission_fee": 3500, "total_price": 21000, "driver_radius_km": 10, "max_distance_km": 30, "is_available": true }, "message": "Estimasi harga berhasil dihitung" } } } }, "422": { "$ref": "#/components/responses/ValidationError" } }
       }
     },
-    "/api/client/routing/distance": {
+    "/routing": {
       "post": {
         "tags": ["Routing"],
         "summary": "Calculate route distance",
         "operationId": "routingDistance",
         "parameters": [],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RoutingRequest" }, "example": { "mode": "motorcycle", "routes": [{ "latitude": -7.250445, "longitude": 112.768845 }, { "latitude": -7.26, "longitude": 112.78 }] } } } },
-        "responses": { "200": { "description": "Jarak routing", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RoutingResponse" } } } }, "422": { "$ref": "#/components/responses/ValidationError" } }
+        "responses": { "200": { "description": "Jarak routing", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RoutingResponse" }, "example": { "data": { "distance_meters": 2450, "duration_seconds": 420, "provider": "geoapify", "mode": "motorcycle", "legs": [{ "index": 0, "distance_meters": 2450, "duration_seconds": 420 }] }, "message": "Jarak routing berhasil dihitung" } } } }, "422": { "$ref": "#/components/responses/ValidationError" } }
       }
     },
-    "/api/client/orders": {
+    "/geocoding/reverse": {
+      "post": {
+        "tags": ["Geocoding"],
+        "summary": "Resolve coordinates to an address",
+        "operationId": "reverseGeocode",
+        "parameters": [],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReverseGeocodeRequest" }, "example": { "latitude": 1.4748, "longitude": 124.8421 } } } },
+        "responses": { "200": { "description": "Alamat ditemukan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReverseGeocodeResponse" }, "example": { "data": { "formatted": "Jalan Sam Ratulangi, Wenang, Manado, Sulawesi Utara, Indonesia", "address_line1": "Jalan Sam Ratulangi", "address_line2": "Wenang, Manado, Sulawesi Utara, Indonesia", "street": "Jalan Sam Ratulangi", "house_number": null, "city": "Manado", "district": "Wenang", "state": "Sulawesi Utara", "postcode": "95111", "country": "Indonesia", "country_code": "id", "latitude": 1.4748, "longitude": 124.8421, "result_type": "street", "provider": "geoapify" }, "message": "Alamat berhasil ditemukan" } } } }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/orders": {
       "post": {
         "tags": ["Orders"],
         "summary": "Create order",
         "operationId": "createOrder",
         "parameters": [],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateOrderRequest" }, "example": { "customer_uuid": "24a55c29-5be8-4381-b915-3d658685a5a8", "client_request_id": "11111111-1111-4111-8111-111111111111", "service_id": 1, "sub_service_id": 1, "payment_method_id": 1, "regency_id": "7171", "routes": [{ "latitude": -7.250445, "longitude": 112.768845 }, { "latitude": -7.26, "longitude": 112.78 }] } } } },
-        "responses": { "200": { "description": "Order berhasil dibuat", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericResponse" } } } }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateOrderRequest" }, "example": { "customer_uuid": "24a55c29-5be8-4381-b915-3d658685a5a8", "client_request_id": "11111111-1111-4111-8111-111111111111", "service_id": 1, "sub_service_id": 1, "payment_method_id": 1, "regency_id": "7171", "booking_at": "2026-09-13T09:00:00+08:00", "routes": [{ "latitude": -7.250445, "longitude": 112.768845 }, { "latitude": -7.26, "longitude": 112.78 }] } } } },
+        "responses": { "200": { "description": "Order berhasil dibuat", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericResponse" }, "example": { "data": { "uuid": "f4851143-4f1e-4326-9ccd-bfd70fe01ab8", "driver": null, "service": { "id": 1, "name": "Ride" }, "sub_service": { "id": 1, "name": "Motor", "icon": null }, "total_distance_meters": 2450, "total_price": 21000, "status": "BOOKING", "booking_at": "2026-09-13T01:00:00Z", "routes": [], "items": [] }, "message": "Order berhasil dibuat" } } } }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      },
+      "get": {
+        "tags": ["Orders"],
+        "summary": "List orders",
+        "operationId": "listOrders",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 10 } },
+          { "name": "status", "in": "query", "schema": { "type": "string" }, "example": "BOOKING" },
+          { "name": "service_id", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Daftar order", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericResponse" }, "example": { "data": [{ "uuid": "f4851143-4f1e-4326-9ccd-bfd70fe01ab8", "driver": null, "total_distance_meters": 2450, "total_price": 21000, "status": "BOOKING", "booking_at": "2026-09-13T01:00:00Z", "routes": [], "items": [] }], "message": "Daftar order berhasil diambil" } } } } }
       }
     },
-    "/api/client/orders/{order_uuid}/cancel": {
+    "/orders/{order_uuid}": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Show order",
+        "operationId": "showOrder",
+        "parameters": [{ "$ref": "#/components/parameters/OrderUUID" }],
+        "responses": { "200": { "description": "Detail order", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericResponse" }, "example": { "data": { "uuid": "f4851143-4f1e-4326-9ccd-bfd70fe01ab8", "driver": { "uuid": "70df822b-2252-4141-8d64-b95feadf3698", "name": "Andi Driver", "plate_number": "DB 1234 AB", "rating": 4.8 }, "total_distance_meters": 2450, "total_price": 21000, "status": "ACCEPTED", "booking_at": "2026-09-13T01:00:00Z", "routes": [], "items": [] }, "message": "Detail order berhasil diambil" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/orders/{order_uuid}/cancel": {
       "post": {
         "tags": ["Orders"],
         "summary": "Cancel order",
         "operationId": "cancelOrder",
         "parameters": [{ "$ref": "#/components/parameters/OrderUUID" }],
         "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CancelRequest" }, "example": { "reason": "Customer membatalkan order" } } } },
-        "responses": { "200": { "description": "Order berhasil dibatalkan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+        "responses": { "200": { "description": "Order berhasil dibatalkan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" }, "example": { "message": "Order berhasil dibatalkan" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
       }
     },
-    "/api/client/orders/{order_uuid}/review-driver": {
+    "/orders/{order_uuid}/review-driver": {
       "post": {
         "tags": ["Orders"],
         "summary": "Review driver",
         "operationId": "reviewDriver",
         "parameters": [{ "$ref": "#/components/parameters/OrderUUID" }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReviewRequest" }, "example": { "rating": 5, "comment": "Pelayanan baik" } } } },
-        "responses": { "200": { "description": "Review berhasil", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericResponse" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+        "responses": { "200": { "description": "Review berhasil", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericResponse" }, "example": { "data": { "order_id": 1001, "rater_type": "customer", "rater_id": 201, "ratee_type": "driver", "ratee_id": 301, "overall_rating": 5, "reviews": ["Pelayanan baik"], "created_at": "2026-09-13T02:30:00Z" }, "message": "Penilaian driver berhasil disimpan" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/orders/{order_uuid}/chat/messages": {
+      "get": {
+        "tags": ["Chat"],
+        "summary": "List customer-driver chat messages",
+        "operationId": "listChatMessages",
+        "parameters": [
+          { "$ref": "#/components/parameters/OrderUUID" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 50 } }
+        ],
+        "responses": { "200": { "description": "Daftar chat", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessagesResponse" }, "example": { "data": { "items": [{ "id": 50, "sender_id": 301, "sender_role": "driver", "message": "Saya menuju lokasi pickup", "message_type": "text", "image_path": null, "created_at": "2026-09-12T14:37:06Z", "is_read": false }], "total_items": 1, "total_pages": 1, "current_page": 1, "items_per_page": 50 }, "message": "Chat berhasil diambil" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "post": {
+        "tags": ["Chat"],
+        "summary": "Send customer-driver chat message",
+        "operationId": "sendChatMessage",
+        "parameters": [{ "$ref": "#/components/parameters/OrderUUID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SendChatMessageRequest" }, "example": { "message": "Driver, mohon ke pickup", "message_type": "text" } } } },
+        "responses": { "200": { "description": "Chat berhasil dikirim", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessageResponse" }, "example": { "data": { "id": 51, "sender_id": 201, "sender_role": "customer", "message": "Driver, mohon ke pickup", "message_type": "text", "image_path": null, "created_at": "2026-09-12T14:38:06Z", "is_read": false }, "message": "Chat berhasil dikirim" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/orders/{order_uuid}/chat/read": {
+      "post": {
+        "tags": ["Chat"],
+        "summary": "Mark customer-driver chat as read",
+        "operationId": "markChatRead",
+        "parameters": [{ "$ref": "#/components/parameters/OrderUUID" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarkChatReadRequest" }, "example": { "last_read_message_id": 51 } } } },
+        "responses": { "200": { "description": "Chat ditandai telah dibaca", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarkChatReadResponse" }, "example": { "data": { "last_read_message_id": 51 }, "message": "Chat berhasil ditandai telah dibaca" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/orders/{order_uuid}/chat/images": {
+      "post": {
+        "tags": ["Chat"],
+        "summary": "Upload and send a customer-driver chat image",
+        "operationId": "sendChatImage",
+        "parameters": [{ "$ref": "#/components/parameters/OrderUUID" }],
+        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "$ref": "#/components/schemas/SendChatImageRequest" } } } },
+        "responses": { "200": { "description": "Gambar chat berhasil dikirim", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessageResponse" }, "example": { "data": { "id": 52, "sender_id": 201, "sender_role": "customer", "message": "Lokasi pickup saya", "message_type": "image", "image_path": "chat/83ca7ca8-a2ba-4efe-a247-89e15e23b312.jpg", "created_at": "2026-09-12T14:39:06Z", "is_read": false }, "message": "Gambar chat berhasil dikirim" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
       }
     }
   },
@@ -92,18 +166,28 @@
       "RegisterRequest": { "type": "object", "required": ["name", "email", "phone"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 150 }, "email": { "type": "string", "format": "email" }, "phone": { "type": "string", "minLength": 8, "maxLength": 20 } } },
       "RegisterResponse": { "type": "object", "properties": { "data": { "type": "object", "properties": { "uuid": { "type": "string", "format": "uuid" }, "name": { "type": "string" }, "email": { "type": "string" }, "phone": { "type": "string" } } }, "message": { "type": "string" } } },
       "RoutingRequest": { "type": "object", "required": ["mode", "routes"], "properties": { "mode": { "type": "string", "enum": ["motorcycle", "drive"] }, "routes": { "type": "array", "minItems": 2, "maxItems": 6, "items": { "$ref": "#/components/schemas/Waypoint" } } } },
-      "Waypoint": { "type": "object", "required": ["latitude", "longitude"], "properties": { "latitude": { "type": "number", "format": "double", "minimum": -90, "maximum": 90 }, "longitude": { "type": "number", "format": "double", "minimum": -180, "maximum": 180 }, "address": { "type": "string" }, "note": { "type": "string" } } },
+      "Waypoint": { "type": "object", "required": ["latitude", "longitude"], "properties": { "latitude": { "type": "number", "format": "double", "minimum": -90, "maximum": 90 }, "longitude": { "type": "number", "format": "double", "minimum": -180, "maximum": 180 }, "address": { "type": "string", "description": "Opsional. Jika kosong, Partner API mengisinya otomatis dari koordinat." }, "note": { "type": "string" } } },
       "RoutingResponse": { "type": "object", "properties": { "data": { "type": "object", "properties": { "distance_meters": { "type": "integer" }, "duration_seconds": { "type": "integer" }, "provider": { "type": "string" }, "mode": { "type": "string" }, "legs": { "type": "array", "items": { "type": "object" } } } }, "message": { "type": "string" } } },
-      "CreateOrderRequest": { "type": "object", "required": ["customer_uuid", "client_request_id", "service_id", "sub_service_id", "payment_method_id", "regency_id", "routes"], "properties": { "customer_uuid": { "type": "string", "format": "uuid" }, "client_request_id": { "type": "string", "format": "uuid" }, "service_id": { "type": "integer", "enum": [1, 2] }, "sub_service_id": { "type": "integer" }, "payment_method_id": { "type": "integer" }, "regency_id": { "type": "string" }, "driver_uuid": { "type": "string", "format": "uuid" }, "merchant_uuid": { "type": "string", "format": "uuid" }, "routes": { "type": "array", "minItems": 2, "maxItems": 6, "items": { "$ref": "#/components/schemas/Waypoint" } }, "items": { "type": "array", "items": { "type": "object" } }, "voucher_code": { "type": "string" }, "delivery_detail": { "type": "object" } } },
+      "ReverseGeocodeRequest": { "type": "object", "required": ["latitude", "longitude"], "properties": { "latitude": { "type": "number", "format": "double", "minimum": -90, "maximum": 90 }, "longitude": { "type": "number", "format": "double", "minimum": -180, "maximum": 180 } } },
+      "ReverseGeocodeData": { "type": "object", "properties": { "formatted": { "type": "string" }, "address_line1": { "type": "string", "nullable": true }, "address_line2": { "type": "string", "nullable": true }, "street": { "type": "string", "nullable": true }, "house_number": { "type": "string", "nullable": true }, "city": { "type": "string", "nullable": true }, "district": { "type": "string", "nullable": true }, "state": { "type": "string", "nullable": true }, "postcode": { "type": "string", "nullable": true }, "country": { "type": "string", "nullable": true }, "country_code": { "type": "string", "nullable": true }, "latitude": { "type": "number", "format": "double" }, "longitude": { "type": "number", "format": "double" }, "result_type": { "type": "string", "nullable": true }, "provider": { "type": "string" } } },
+      "ReverseGeocodeResponse": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/ReverseGeocodeData" }, "message": { "type": "string" } } },
+      "CreateOrderRequest": { "type": "object", "required": ["customer_uuid", "client_request_id", "service_id", "sub_service_id", "payment_method_id", "regency_id", "routes"], "properties": { "customer_uuid": { "type": "string", "format": "uuid" }, "client_request_id": { "type": "string", "format": "uuid" }, "service_id": { "type": "integer", "enum": [1, 2] }, "sub_service_id": { "type": "integer" }, "payment_method_id": { "type": "integer" }, "regency_id": { "type": "string" }, "driver_uuid": { "type": "string", "format": "uuid" }, "booking_at": { "type": "string", "format": "date-time", "description": "Waktu pickup booking. Jika diisi, jangan kirim driver_uuid." }, "merchant_uuid": { "type": "string", "format": "uuid" }, "routes": { "type": "array", "minItems": 2, "maxItems": 6, "items": { "$ref": "#/components/schemas/Waypoint" } }, "items": { "type": "array", "items": { "type": "object" } }, "voucher_code": { "type": "string" }, "delivery_detail": { "type": "object" } } },
       "CancelRequest": { "type": "object", "properties": { "reason": { "type": "string" } } },
       "ReviewRequest": { "type": "object", "required": ["rating"], "properties": { "rating": { "type": "integer", "minimum": 1, "maximum": 5 }, "comment": { "type": "string", "maxLength": 500 } } },
+      "SendChatMessageRequest": { "type": "object", "required": ["message"], "properties": { "message": { "type": "string", "minLength": 1, "maxLength": 1000 }, "message_type": { "type": "string", "default": "text" }, "image_path": { "type": "string", "nullable": true } } },
+      "MarkChatReadRequest": { "type": "object", "required": ["last_read_message_id"], "properties": { "last_read_message_id": { "type": "integer", "format": "int64", "minimum": 1 } } },
+      "MarkChatReadResponse": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/MarkChatReadRequest" }, "message": { "type": "string" } } },
+      "SendChatImageRequest": { "type": "object", "required": ["file"], "properties": { "file": { "type": "string", "format": "binary", "description": "JPEG, PNG, GIF, atau WebP" }, "message": { "type": "string", "maxLength": 1000, "description": "Caption opsional" } } },
+      "ChatMessage": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64" }, "sender_id": { "type": "integer", "format": "int64" }, "sender_role": { "type": "string" }, "message": { "type": "string" }, "message_type": { "type": "string" }, "image_path": { "type": "string", "nullable": true }, "created_at": { "type": "string" }, "is_read": { "type": "boolean" } } },
+      "ChatMessagesResponse": { "type": "object", "properties": { "data": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/ChatMessage" } }, "total_items": { "type": "integer" }, "total_pages": { "type": "integer" }, "current_page": { "type": "integer" }, "items_per_page": { "type": "integer" } } }, "message": { "type": "string" } } },
+      "ChatMessageResponse": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/ChatMessage" }, "message": { "type": "string" } } },
       "GenericResponse": { "type": "object", "properties": { "data": {}, "message": { "type": "string" } } },
       "MessageResponse": { "type": "object", "properties": { "message": { "type": "string" } } }
     },
     "responses": {
-      "ValidationError": { "description": "Payload tidak valid", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
-      "Conflict": { "description": "Data sudah ada atau request duplikat", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
-      "NotFound": { "description": "Resource tidak ditemukan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+      "ValidationError": { "description": "Payload tidak valid", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" }, "example": { "status": "error", "message": "Validation failed", "errors": { "email": ["invalid email"] } } } } },
+      "Conflict": { "description": "Data sudah ada atau request duplikat", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" }, "example": { "message": "Resource already exists" } } } },
+      "NotFound": { "description": "Resource tidak ditemukan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" }, "example": { "message": "Resource tidak ditemukan" } } } }
     }
   }
 }

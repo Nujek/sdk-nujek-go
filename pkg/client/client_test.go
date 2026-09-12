@@ -12,6 +12,32 @@ import (
 	"time"
 )
 
+func TestDecodeAPIErrorSupportsBackendEnvelopes(t *testing.T) {
+	tests := []struct {
+		name       string
+		body       string
+		message    string
+		fieldCount int
+	}{
+		{name: "message response", body: `{"message":"Resource tidak ditemukan"}`, message: "Resource tidak ditemukan"},
+		{name: "validation response", body: `{"status":"error","message":"Validation failed","errors":{"email":["invalid email"]}}`, message: "Validation failed", fieldCount: 1},
+		{name: "nested proxy response", body: `{"error":{"code":"INVALID_SIGNATURE","message":"Signature salah","fields":{"signature":"invalid"}}}`, message: "Signature salah", fieldCount: 1},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := decodeAPIError(http.StatusBadRequest, []byte(test.body))
+			apiErr, ok := err.(*APIError)
+			if !ok {
+				t.Fatalf("error type = %T, want *APIError", err)
+			}
+			if apiErr.Message != test.message || len(apiErr.Fields) != test.fieldCount {
+				t.Fatalf("unexpected API error: %+v", apiErr)
+			}
+		})
+	}
+}
+
 type captureTransport struct{ request *http.Request }
 
 func (t *captureTransport) Do(request *http.Request) (*http.Response, error) {

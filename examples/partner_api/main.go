@@ -35,6 +35,7 @@ func main() {
 	mux.HandleFunc("POST /register", h.register)
 	mux.HandleFunc("GET /pricing", h.pricingPreview)
 	mux.HandleFunc("POST /routing", h.routingDistance)
+	mux.HandleFunc("POST /geocoding/reverse", h.reverseGeocode)
 	mux.HandleFunc("POST /orders", h.createOrder)
 	mux.HandleFunc("GET /orders", h.listOrders)
 	mux.HandleFunc("GET /orders/{orderUUID}", h.showOrder)
@@ -42,6 +43,8 @@ func main() {
 	mux.HandleFunc("POST /orders/{orderUUID}/review-driver", h.reviewDriver)
 	mux.HandleFunc("GET /orders/{orderUUID}/chat/messages", h.listChatMessages)
 	mux.HandleFunc("POST /orders/{orderUUID}/chat/messages", h.sendChatMessage)
+	mux.HandleFunc("POST /orders/{orderUUID}/chat/read", h.markChatRead)
+	mux.HandleFunc("POST /orders/{orderUUID}/chat/images", h.sendChatImage)
 
 	address := ":" + port
 	log.Printf("Partner API SDK example listening on http://localhost:%s", port)
@@ -81,6 +84,15 @@ func (s *server) routingDistance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := s.api.RoutingDistance(r.Context(), payload)
+	writeResult(w, result, err)
+}
+
+func (s *server) reverseGeocode(w http.ResponseWriter, r *http.Request) {
+	var payload client.ReverseGeocodeRequest
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	result, err := s.api.ReverseGeocode(r.Context(), payload)
 	writeResult(w, result, err)
 }
 
@@ -166,6 +178,36 @@ func (s *server) sendChatMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := s.api.SendChatMessage(r.Context(), r.PathValue("orderUUID"), payload)
+	writeResult(w, result, err)
+}
+
+func (s *server) markChatRead(w http.ResponseWriter, r *http.Request) {
+	var payload client.MarkChatReadRequest
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	result, err := s.api.MarkChatRead(r.Context(), r.PathValue("orderUUID"), payload)
+	writeResult(w, result, err)
+}
+
+func (s *server) sendChatImage(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": map[string]string{"code": "INVALID_MULTIPART", "message": err.Error()}})
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": map[string]string{"code": "FILE_REQUIRED", "message": "field file wajib diisi"}})
+		return
+	}
+	defer file.Close()
+	contentType := header.Header.Get("Content-Type")
+	result, err := s.api.SendChatImage(r.Context(), r.PathValue("orderUUID"), client.SendChatImageRequest{
+		FileName:    header.Filename,
+		ContentType: contentType,
+		Image:       file,
+		Message:     r.FormValue("message"),
+	})
 	writeResult(w, result, err)
 }
 

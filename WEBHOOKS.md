@@ -80,6 +80,21 @@ w.WriteHeader(http.StatusNoContent)
 backend di masa depan tidak langsung merusak receiver. Gunakan
 `IsKnownWebhookEvent` bila aplikasi perlu membedakan event yang sudah didukung.
 
+Contoh payload order booking; `booking_at` bernilai `null` untuk order instan:
+
+```json
+{
+  "event": "order.created",
+  "occurred_at": "2026-09-12T04:00:00Z",
+  "data": {
+    "order_uuid": "f4851143-4f1e-4326-9ccd-bfd70fe01ab8",
+    "status": "BOOKING",
+    "driver_uuid": null,
+    "booking_at": "2026-09-13T01:00:00Z"
+  }
+}
+```
+
 Balas dengan status HTTP `2xx` hanya setelah event berhasil diterima. Nujek akan
 mencoba kembali delivery yang gagal, sehingga `X-Webhook-Id` wajib diproses secara
 idempoten. Webhook secret berbeda dari API secret dan diberikan saat client dibuat

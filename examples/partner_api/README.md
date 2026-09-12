@@ -2,11 +2,16 @@
 
 Example ini menunjukkan semua method SDK:
 
+Contoh response JSON untuk setiap method tersedia di
+[`API_RESPONSES.md`](../../API_RESPONSES.md). Contoh tersebut mengikuti envelope
+yang diteruskan oleh server example ini.
+
 | Method | Endpoint |
 | --- | --- |
 | `Register` | `POST {{baseUrl}}/register` |
 | `PricingPreview` | `GET {{baseUrl}}/pricing` |
 | `RoutingDistance` | `POST {{baseUrl}}/routing` |
+| `ReverseGeocode` | `POST {{baseUrl}}/geocoding/reverse` |
 | `CreateOrder` | `POST {{baseUrl}}/orders` |
 | `ListOrders` | `GET {{baseUrl}}/orders` |
 | `ShowOrder` | `GET {{baseUrl}}/orders/{order_uuid}` |
@@ -14,6 +19,8 @@ Example ini menunjukkan semua method SDK:
 | `ReviewDriver` | `POST {{baseUrl}}/orders/{order_uuid}/review-driver` |
 | `ListChatMessages` | `GET {{baseUrl}}/orders/{order_uuid}/chat/messages` |
 | `SendChatMessage` | `POST {{baseUrl}}/orders/{order_uuid}/chat/messages` |
+| `MarkChatRead` | `POST {{baseUrl}}/orders/{order_uuid}/chat/read` |
+| `SendChatImage` | `POST {{baseUrl}}/orders/{order_uuid}/chat/images` |
 
 Untuk Postman, `baseUrl` adalah server example lokal: `http://localhost:8088`.
 Server example membaca credentials upstream dari `.env`, sehingga Postman tidak
@@ -108,7 +115,7 @@ Content-Type: application/json
 }
 ```
 
-Route lokal lainnya adalah `GET /orders`, `GET /orders/{order_uuid}`, `POST /orders`, `POST /orders/{order_uuid}/cancel`,
+Route lokal lainnya adalah `POST /geocoding/reverse`, `GET /orders`, `GET /orders/{order_uuid}`, `POST /orders`, `POST /orders/{order_uuid}/cancel`,
 `POST /orders/{order_uuid}/review-driver`, serta `GET`/`POST
 `/orders/{order_uuid}/chat/messages`; body-nya sama dengan contoh
 SDK di bawah.
@@ -124,6 +131,8 @@ result, err := api.Register(ctx, "Budi", "budi@example.com", "081234567890")
 Response berisi `uuid` customer. Simpan UUID tersebut untuk `CUSTOMER_UUID`.
 Request identik bersifat idempotent untuk client yang sama.
 
+Contoh response: [Register](../../API_RESPONSES.md#1-register).
+
 ### Pricing preview
 
 ```go
@@ -136,6 +145,8 @@ pricing, message, err := api.PricingPreview(ctx, client.PricingPreviewParams{
 `service_id` wajib dan hanya mendukung `1` atau `2`. Parameter lain: 
 `sub_service_id`, `regency_id`, `regency_name`, `distance_km`, `is_simple`,
 `latitude`, dan `longitude`. Response pricing dikembalikan sebagai JSON mentah.
+
+Contoh response: [PricingPreview](../../API_RESPONSES.md#2-pricingpreview).
 
 ### Routing distance
 
@@ -151,6 +162,24 @@ result, err := api.RoutingDistance(ctx, client.RoutingRequest{
 
 `Routes` harus berisi 2–6 titik. Response berisi jarak meter, durasi detik,
 provider, mode, dan rincian legs.
+
+Contoh response: [RoutingDistance](../../API_RESPONSES.md#3-routingdistance).
+
+### Coordinate ke address
+
+```go
+result, err := api.ReverseGeocode(ctx, client.ReverseGeocodeRequest{
+    Latitude:  1.4748,
+    Longitude: 124.8421,
+})
+```
+
+Gunakan `result.Data.Formatted` untuk alamat siap tampil. Komponen seperti
+`street`, `city`, `district`, `state`, dan `postcode` juga tersedia. Saat
+`CreateOrder`, proses ini berjalan otomatis hanya untuk route yang address-nya
+tidak diisi.
+
+Contoh response: [ReverseGeocode](../../API_RESPONSES.md#13-reversegeocode).
 
 ### Create order
 
@@ -171,6 +200,21 @@ created, message, err := api.CreateOrder(ctx, order)
 `client_request_id` wajib unik untuk idempotensi, `service_id` hanya `1` atau
 `2`, dan `routes` harus 2–6 titik. Field `items`, `voucher_code`,
 `merchant_uuid`, `driver_uuid`, dan `delivery_detail` mengikuti kontrak order.
+Untuk booking, kirim `booking_at` RFC 3339 dan jangan kirim `driver_uuid`.
+
+Contoh response: [CreateOrder](../../API_RESPONSES.md#4-createorder).
+
+### List dan detail order
+
+```go
+orders, message, err := api.ListOrders(ctx, client.PricingPreviewParams{
+    "page": {"1"}, "limit": {"10"}, "status": {"BOOKING"},
+})
+order, message, err := api.ShowOrder(ctx, orderUUID)
+```
+
+Contoh response: [ListOrders](../../API_RESPONSES.md#5-listorders) dan
+[ShowOrder](../../API_RESPONSES.md#6-showorder).
 
 ### Cancel order
 
@@ -181,6 +225,8 @@ message, err := api.CancelOrder(ctx, orderUUID,
 
 Request body boleh `nil`. Order harus milik client yang sama.
 
+Contoh response: [CancelOrder](../../API_RESPONSES.md#7-cancelorder).
+
 ### Review driver
 
 ```go
@@ -190,6 +236,8 @@ result, message, err := api.ReviewDriver(ctx, orderUUID, client.ReviewRequest{
 ```
 
 Rating harus 1–5 dan order harus sudah selesai.
+
+Contoh response: [ReviewDriver](../../API_RESPONSES.md#8-reviewdriver).
 
 ### Chat customer dan driver
 
@@ -203,11 +251,28 @@ sent, err := api.SendChatMessage(ctx, orderUUID, client.SendChatMessageRequest{
     Message: "Driver, mohon ke pickup",
     MessageType: "text",
 })
+
+read, err := api.MarkChatRead(ctx, orderUUID, client.MarkChatReadRequest{
+    LastReadMessageID: sent.Data.ID,
+})
+
+file, err := os.Open("pickup.jpg")
+if err != nil { log.Fatal(err) }
+defer file.Close()
+image, err := api.SendChatImage(ctx, orderUUID, client.SendChatImageRequest{
+    FileName: "pickup.jpg", ContentType: "image/jpeg",
+    Image: file, Message: "Lokasi pickup saya",
+})
 ```
 
 Daftar pesan diurutkan dari pesan terbaru. Nilai pagination `0` menggunakan
 default API. Partner hanya dapat mengakses order miliknya dan percakapan
 `customer_driver`.
+
+Contoh response: [ListChatMessages](../../API_RESPONSES.md#9-listchatmessages),
+[SendChatMessage](../../API_RESPONSES.md#10-sendchatmessage),
+[MarkChatRead](../../API_RESPONSES.md#11-markchatread), dan
+[SendChatImage](../../API_RESPONSES.md#12-sendchatimage).
 
 Pesan baru dari driver dikirim ke URL webhook partner sebagai event
 `chat.message`. Verifikasi signature menggunakan raw body sebelum parsing:

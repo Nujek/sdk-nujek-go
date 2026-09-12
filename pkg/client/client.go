@@ -75,10 +75,10 @@ func New(baseURL, apiKey, apiSecret string, options ...Option) (*Client, error) 
 }
 
 type APIError struct {
-	StatusCode int
-	Code       string
-	Message    string
-	Fields     map[string]any
+	StatusCode int            `json:"status_code"`
+	Code       string         `json:"code,omitempty"`
+	Message    string         `json:"message"`
+	Fields     map[string]any `json:"fields,omitempty"`
 }
 
 func (e *APIError) Error() string {
@@ -200,6 +200,20 @@ func (c *Client) request(ctx context.Context, method, path string, query url.Val
 			return fmt.Errorf("marshal request: %w", err)
 		}
 	}
+	contentType := ""
+	if method != http.MethodGet {
+		contentType = "application/json"
+	}
+	return c.requestBytes(ctx, method, path, query, body, contentType, target)
+}
+
+func (c *Client) requestBytes(ctx context.Context, method, path string, query url.Values, body []byte, contentType string, target any) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if path == "" || path[0] != '/' {
+		return errors.New("path API harus diawali slash")
+	}
 	endpointPath := apiPrefix + path
 	u, err := url.Parse(c.baseURL + endpointPath)
 	if err != nil {
@@ -230,8 +244,8 @@ func (c *Client) request(ctx context.Context, method, path string, query url.Val
 	req.Header.Set("X-Timestamp", timestamp)
 	req.Header.Set("X-Nonce", nonce)
 	req.Header.Set("X-Signature", signature)
-	if method != http.MethodGet {
-		req.Header.Set("Content-Type", "application/json")
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -256,7 +270,11 @@ func (c *Client) request(ctx context.Context, method, path string, query url.Val
 
 func decodeAPIError(status int, raw []byte) error {
 	var envelope struct {
-		Error struct {
+		Code    string         `json:"code"`
+		Message string         `json:"message"`
+		Fields  map[string]any `json:"fields"`
+		Errors  map[string]any `json:"errors"`
+		Error   struct {
 			Code    string         `json:"code"`
 			Message string         `json:"message"`
 			Fields  map[string]any `json:"fields"`
@@ -264,13 +282,27 @@ func decodeAPIError(status int, raw []byte) error {
 	}
 	_ = json.Unmarshal(raw, &envelope)
 	message := envelope.Error.Message
+	code := envelope.Error.Code
+	fields := envelope.Error.Fields
+	if message == "" {
+		message = envelope.Message
+	}
+	if code == "" {
+		code = envelope.Code
+	}
+	if fields == nil {
+		fields = envelope.Fields
+	}
+	if fields == nil {
+		fields = envelope.Errors
+	}
 	if message == "" {
 		message = strings.TrimSpace(string(raw))
 		if message == "" {
 			message = http.StatusText(status)
 		}
 	}
-	return &APIError{StatusCode: status, Code: envelope.Error.Code, Message: message, Fields: envelope.Error.Fields}
+	return &APIError{StatusCode: status, Code: code, Message: message, Fields: fields}
 }
 
 func randomNonce() (string, error) {

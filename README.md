@@ -2,12 +2,15 @@
 
 SDK Go untuk Partner API Nujek. SDK otomatis membuat signature HMAC-SHA256
 dengan header `X-Client-Key`, `X-Timestamp`, `X-Nonce`, dan `X-Signature`.
-Rilis terbaru: `v0.1.10`.
+Rilis terbaru: `v0.1.11`.
+
+Contoh JSON response sukses untuk **setiap method SDK**, response kosong, dan
+seluruh bentuk error tersedia di [API_RESPONSES.md](./API_RESPONSES.md).
 
 ## Instalasi
 
 ```bash
-go get github.com/Nujek/sdk-nujek-go@v0.1.10
+go get github.com/Nujek/sdk-nujek-go@v0.1.11
 ```
 
 ## Method SDK dan endpoint upstream
@@ -15,8 +18,9 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.10
 | Method Go | HTTP endpoint |
 | --- | --- |
 | `Register` | `POST /api/client/register` |
-| `PricingPreview` | `GET /api/client/pricing/preview` |
 | `RoutingDistance` | `POST /api/client/routing/distance` |
+| `ReverseGeocode` | `POST /api/client/geocoding/reverse` |
+| `PricingPreview` | `GET /api/client/pricing/preview` |
 | `CreateOrder` | `POST /api/client/orders` |
 | `ListOrders` | `GET /api/client/orders` |
 | `ShowOrder` | `GET /api/client/orders/{order_uuid}` |
@@ -24,6 +28,11 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.10
 | `ReviewDriver` | `POST /api/client/orders/{order_uuid}/review-driver` |
 | `ListChatMessages` | `GET /api/client/orders/{order_uuid}/chat/customer_driver/messages` |
 | `SendChatMessage` | `POST /api/client/orders/{order_uuid}/chat/customer_driver/messages` |
+| `MarkChatRead` | `POST /api/client/orders/{order_uuid}/chat/customer_driver/read` |
+| `SendChatImage` | `POST /api/client/orders/{order_uuid}/chat/customer_driver/images` |
+
+Seluruh 13 method di atas memiliki contoh response yang dapat langsung dipakai
+sebagai fixture di [API_RESPONSES.md](./API_RESPONSES.md).
 
 ```go
 import (
@@ -38,6 +47,16 @@ result, err := api.Register(context.Background(), "Budi", "budi@example.com", "0
 `CreateOrder` menerima `map[string]any` agar field order baru tetap kompatibel.
 `PricingPreview` mengembalikan data pricing sebagai `json.RawMessage`.
 
+`CreateOrder` otomatis mengisi `routes[].address` melalui reverse geocoding
+ketika address tidak dikirim, kosong, atau hanya berisi spasi.
+
+```go
+address, err := api.ReverseGeocode(ctx, client.ReverseGeocodeRequest{
+    Latitude: 1.4748, Longitude: 124.8421,
+})
+fmt.Println(address.Data.Formatted)
+```
+
 ```go
 messages, err := api.ListChatMessages(ctx, orderUUID, client.ChatMessagesParams{
     Page: 1, Limit: 50,
@@ -45,6 +64,18 @@ messages, err := api.ListChatMessages(ctx, orderUUID, client.ChatMessagesParams{
 sent, err := api.SendChatMessage(ctx, orderUUID, client.SendChatMessageRequest{
     Message: "Driver, mohon ke pickup",
     MessageType: "text",
+})
+
+read, err := api.MarkChatRead(ctx, orderUUID, client.MarkChatReadRequest{
+    LastReadMessageID: 51,
+})
+
+file, err := os.Open("pickup.jpg")
+if err != nil { log.Fatal(err) }
+defer file.Close()
+image, err := api.SendChatImage(ctx, orderUUID, client.SendChatImageRequest{
+    FileName: "pickup.jpg", ContentType: "image/jpeg",
+    Image: file, Message: "Lokasi pickup saya",
 })
 ```
 
@@ -62,11 +93,14 @@ Endpoint lokal dibuat singkat dan sama dengan SDK Node.js:
 | POST | `/register` |
 | GET | `/pricing` |
 | POST | `/routing` |
+| POST | `/geocoding/reverse` |
 | POST | `/orders` |
 | POST | `/orders/{order_uuid}/cancel` |
 | POST | `/orders/{order_uuid}/review-driver` |
 | GET | `/orders/{order_uuid}/chat/messages` |
 | POST | `/orders/{order_uuid}/chat/messages` |
+| POST | `/orders/{order_uuid}/chat/read` |
+| POST | `/orders/{order_uuid}/chat/images` (multipart) |
 
 Jalankan:
 

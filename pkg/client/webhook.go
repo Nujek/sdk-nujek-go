@@ -56,6 +56,7 @@ type OrderWebhookData struct {
 	OrderUUID  string  `json:"order_uuid"`
 	Status     string  `json:"status"`
 	DriverUUID *string `json:"driver_uuid"`
+	BookingAt  *string `json:"booking_at"`
 }
 
 type ChatMessageWebhookData struct {
