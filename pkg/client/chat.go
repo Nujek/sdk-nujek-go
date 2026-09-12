@@ -25,6 +25,7 @@ type ChatMessage struct {
 	Message     string  `json:"message"`
 	MessageType string  `json:"message_type"`
 	ImagePath   *string `json:"image_path"`
+	ImageURL    *string `json:"image_url"`
 	CreatedAt   string  `json:"created_at"`
 	IsRead      bool    `json:"is_read"`
 }

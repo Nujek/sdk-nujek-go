@@ -2,7 +2,7 @@
 
 SDK Go untuk Partner API Nujek. SDK otomatis membuat signature HMAC-SHA256
 dengan header `X-Client-Key`, `X-Timestamp`, `X-Nonce`, dan `X-Signature`.
-Rilis terbaru: `v0.1.11`.
+Rilis terbaru: `v0.1.12`.
 
 Contoh JSON response sukses untuk **setiap method SDK**, response kosong, dan
 seluruh bentuk error tersedia di [API_RESPONSES.md](./API_RESPONSES.md).
@@ -10,7 +10,7 @@ seluruh bentuk error tersedia di [API_RESPONSES.md](./API_RESPONSES.md).
 ## Instalasi
 
 ```bash
-go get github.com/Nujek/sdk-nujek-go@v0.1.11
+go get github.com/Nujek/sdk-nujek-go@v0.1.12
 ```
 
 ## Method SDK dan endpoint upstream
@@ -21,6 +21,7 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.11
 | `RoutingDistance` | `POST /api/client/routing/distance` |
 | `ReverseGeocode` | `POST /api/client/geocoding/reverse` |
 | `PricingPreview` | `GET /api/client/pricing/preview` |
+| `ReviewApplication` | `POST /api/client/reviews` |
 | `CreateOrder` | `POST /api/client/orders` |
 | `ListOrders` | `GET /api/client/orders` |
 | `ShowOrder` | `GET /api/client/orders/{order_uuid}` |
@@ -31,7 +32,7 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.11
 | `MarkChatRead` | `POST /api/client/orders/{order_uuid}/chat/customer_driver/read` |
 | `SendChatImage` | `POST /api/client/orders/{order_uuid}/chat/customer_driver/images` |
 
-Seluruh 13 method di atas memiliki contoh response yang dapat langsung dipakai
+Seluruh 14 method di atas memiliki contoh response yang dapat langsung dipakai
 sebagai fixture di [API_RESPONSES.md](./API_RESPONSES.md).
 
 ```go
@@ -42,6 +43,16 @@ import (
 
 api, err := client.New("https://api.example.com", "client-api-key", "client-api-secret")
 result, err := api.Register(context.Background(), "Budi", "budi@example.com", "081234567890")
+```
+
+```go
+rating := int16(5)
+review, err := api.ReviewApplication(ctx, client.AppReviewRequest{
+    CustomerUUID: customerUUID,
+    Category: "service",
+    Rating: &rating,
+    Review: "Aplikasi sangat membantu",
+})
 ```
 
 `CreateOrder` menerima `map[string]any` agar field order baru tetap kompatibel.
@@ -93,6 +104,7 @@ Endpoint lokal dibuat singkat dan sama dengan SDK Node.js:
 | POST | `/register` |
 | GET | `/pricing` |
 | POST | `/routing` |
+| POST | `/reviews` |
 | POST | `/geocoding/reverse` |
 | POST | `/orders` |
 | POST | `/orders/{order_uuid}/cancel` |

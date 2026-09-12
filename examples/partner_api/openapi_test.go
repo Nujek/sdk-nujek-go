@@ -39,7 +39,7 @@ func TestEveryOpenAPIOperationHasSuccessResponseExample(t *testing.T) {
 			}
 		}
 	}
-	if operationCount != 13 {
-		t.Fatalf("jumlah operasi terdokumentasi = %d, ingin 13", operationCount)
+	if operationCount != 14 {
+		t.Fatalf("jumlah operasi terdokumentasi = %d, ingin 14", operationCount)
 	}
 }

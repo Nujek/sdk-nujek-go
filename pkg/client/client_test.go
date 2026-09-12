@@ -72,3 +72,45 @@ func TestRequestSignatureIncludesQueryAndBody(t *testing.T) {
 		t.Fatalf("signature = %s, want %s", got, want)
 	}
 }
+
+func TestReviewApplication(t *testing.T) {
+	transport := &captureTransport{}
+	c, err := New("https://example.test", "public-key", "secret", WithHTTPClient(transport))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rating := int16(5)
+	_, err = c.ReviewApplication(context.Background(), AppReviewRequest{
+		CustomerUUID: " customer-uuid ",
+		Category:     " service ",
+		Rating:       &rating,
+		Review:       " Sangat membantu ",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := transport.request.URL.Path, "/api/client/reviews"; got != want {
+		t.Fatalf("path = %q, want %q", got, want)
+	}
+	body, err := io.ReadAll(transport.request.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(body); got != `{"customer_uuid":"customer-uuid","category":"service","rating":5,"review":"Sangat membantu"}` {
+		t.Fatalf("body = %s", got)
+	}
+}
+
+func TestReviewApplicationRejectsInvalidInput(t *testing.T) {
+	c, err := New("https://example.test", "public-key", "secret", WithHTTPClient(&captureTransport{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.ReviewApplication(context.Background(), AppReviewRequest{}); err == nil {
+		t.Fatal("expected invalid request error")
+	}
+	rating := int16(6)
+	if _, err := c.ReviewApplication(context.Background(), AppReviewRequest{CustomerUUID: "u", Rating: &rating, Review: "review"}); err == nil {
+		t.Fatal("expected invalid rating error")
+	}
+}

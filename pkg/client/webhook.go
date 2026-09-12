@@ -13,6 +13,7 @@ import (
 
 const (
 	WebhookEventOrderCreated          = "order.created"
+	WebhookEventOrderBookingStarted   = "order.booking_started"
 	WebhookEventDriverAccepted        = "driver.accepted"
 	WebhookEventDriverRejected        = "driver.rejected"
 	WebhookEventDriverCancelled       = "driver.cancelled"
@@ -36,7 +37,7 @@ const (
 )
 
 var knownWebhookEvents = map[string]struct{}{
-	WebhookEventOrderCreated: {}, WebhookEventDriverAccepted: {},
+	WebhookEventOrderCreated: {}, WebhookEventOrderBookingStarted: {}, WebhookEventDriverAccepted: {},
 	WebhookEventDriverRejected: {}, WebhookEventDriverCancelled: {},
 	WebhookEventDriverArrived: {}, WebhookEventDriverPickedUp: {},
 	WebhookEventDriverTimeout: {}, WebhookEventOrderFinished: {},
@@ -68,6 +69,7 @@ type ChatMessageWebhookData struct {
 	Message          string  `json:"message"`
 	MessageType      string  `json:"message_type"`
 	ImagePath        *string `json:"image_path"`
+	ImageURL         *string `json:"image_url"`
 	CreatedAt        string  `json:"created_at"`
 }
 

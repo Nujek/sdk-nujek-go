@@ -125,6 +125,22 @@ type ReviewRequest struct {
 	Rating  int    `json:"rating"`
 	Comment string `json:"comment,omitempty"`
 }
+type AppReviewRequest struct {
+	CustomerUUID string `json:"customer_uuid"`
+	Category     string `json:"category,omitempty"`
+	Rating       *int16 `json:"rating,omitempty"`
+	Review       string `json:"review"`
+}
+type AppReview struct {
+	UUID         string `json:"uuid"`
+	CustomerUUID string `json:"customer_uuid"`
+	Category     string `json:"category"`
+	Rating       *int16 `json:"rating"`
+	Review       string `json:"review"`
+	Status       string `json:"status"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
 
 type PricingPreviewParams url.Values
 
@@ -179,6 +195,26 @@ func (c *Client) ReviewDriver(ctx context.Context, orderUUID string, request Rev
 	var response Response[json.RawMessage]
 	err := c.postJSON(ctx, "/orders/"+url.PathEscape(orderUUID)+"/review-driver", request, &response)
 	return response.Data, response.Message, err
+}
+
+// ReviewApplication submits application feedback on behalf of a customer
+// connected to the authenticated partner client.
+func (c *Client) ReviewApplication(ctx context.Context, request AppReviewRequest) (Response[AppReview], error) {
+	var response Response[AppReview]
+	request.CustomerUUID = strings.TrimSpace(request.CustomerUUID)
+	request.Category = strings.TrimSpace(request.Category)
+	request.Review = strings.TrimSpace(request.Review)
+	if request.CustomerUUID == "" {
+		return response, errors.New("customer UUID wajib diisi")
+	}
+	if request.Review == "" {
+		return response, errors.New("review aplikasi wajib diisi")
+	}
+	if request.Rating != nil && (*request.Rating < 1 || *request.Rating > 5) {
+		return response, errors.New("rating harus antara 1 sampai 5")
+	}
+	err := c.postJSON(ctx, "/reviews", request, &response)
+	return response, err
 }
 
 func (c *Client) postJSON(ctx context.Context, path string, payload any, target any) error {

@@ -37,7 +37,7 @@ func newChatTestClient(t *testing.T, transport HTTPDoer) *Client {
 }
 
 func TestListChatMessages(t *testing.T) {
-	transport := &chatCaptureTransport{responseBody: `{"data":{"items":[{"id":50,"sender_id":7,"sender_role":"driver","message":"otw","message_type":"text","image_path":null,"created_at":"2026-09-10 14:37:06 +00:00:00","is_read":false}],"total_items":1,"total_pages":1,"current_page":2,"items_per_page":25},"message":"Chat berhasil diambil"}`}
+	transport := &chatCaptureTransport{responseBody: `{"data":{"items":[{"id":50,"sender_id":7,"sender_role":"driver","message":"otw","message_type":"text","image_path":null,"image_url":null,"created_at":"2026-09-10 14:37:06 +00:00:00","is_read":false}],"total_items":1,"total_pages":1,"current_page":2,"items_per_page":25},"message":"Chat berhasil diambil"}`}
 	c := newChatTestClient(t, transport)
 
 	response, err := c.ListChatMessages(context.Background(), "order-uuid", ChatMessagesParams{Page: 2, Limit: 25})
@@ -56,7 +56,7 @@ func TestListChatMessages(t *testing.T) {
 }
 
 func TestSendChatMessage(t *testing.T) {
-	transport := &chatCaptureTransport{responseBody: `{"data":{"id":51,"sender_id":8,"sender_role":"customer","message":"Driver, mohon ke pickup","message_type":"text","image_path":null,"created_at":"2026-09-10 14:38:06 +00:00:00","is_read":false}}`}
+	transport := &chatCaptureTransport{responseBody: `{"data":{"id":51,"sender_id":8,"sender_role":"customer","message":"Driver, mohon ke pickup","message_type":"text","image_path":null,"image_url":null,"created_at":"2026-09-10 14:38:06 +00:00:00","is_read":false}}`}
 	c := newChatTestClient(t, transport)
 
 	response, err := c.SendChatMessage(context.Background(), "order-uuid", SendChatMessageRequest{
@@ -126,7 +126,7 @@ func TestMarkChatReadRejectsInvalidInput(t *testing.T) {
 }
 
 func TestSendChatImage(t *testing.T) {
-	transport := &chatCaptureTransport{responseBody: `{"data":{"id":52,"sender_id":8,"sender_role":"customer","message":"Lokasi saya","message_type":"image","image_path":"chat/image.jpg","created_at":"2026-09-10 14:39:06 +00:00:00","is_read":false},"message":"Gambar chat berhasil dikirim"}`}
+	transport := &chatCaptureTransport{responseBody: `{"data":{"id":52,"sender_id":8,"sender_role":"customer","message":"Lokasi saya","message_type":"image","image_path":"image.jpg","image_url":"https://api.example.com/api/files/image.jpg","created_at":"2026-09-10 14:39:06 +00:00:00","is_read":false},"message":"Gambar chat berhasil dikirim"}`}
 	c := newChatTestClient(t, transport)
 
 	response, err := c.SendChatImage(context.Background(), "order-uuid", SendChatImageRequest{
@@ -143,6 +143,9 @@ func TestSendChatImage(t *testing.T) {
 	}
 	if transport.request.Method != http.MethodPost || response.Data.MessageType != "image" {
 		t.Fatalf("unexpected method/response: %s / %+v", transport.request.Method, response.Data)
+	}
+	if response.Data.ImageURL == nil || *response.Data.ImageURL != "https://api.example.com/api/files/image.jpg" {
+		t.Fatalf("image URL = %v", response.Data.ImageURL)
 	}
 	reader, err := multipart.NewReader(transport.request.Body, strings.TrimPrefix(transport.request.Header.Get("Content-Type"), "multipart/form-data; boundary=")).ReadForm(1024)
 	if err != nil {
@@ -166,7 +169,7 @@ func TestSendChatImageRejectsInvalidInput(t *testing.T) {
 }
 
 func TestChatWebhookVerificationAndParsing(t *testing.T) {
-	body := []byte(`{"event":"chat.message","occurred_at":"2026-09-10T14:37:06Z","data":{"order_uuid":"order-uuid","conversation_type":"customer_driver","message_id":50,"sender_id":7,"sender_role":"driver","message":"otw","message_type":"text","image_path":null,"created_at":"2026-09-10 14:37:06 +00:00:00"}}`)
+	body := []byte(`{"event":"chat.message","occurred_at":"2026-09-10T14:37:06Z","data":{"order_uuid":"order-uuid","conversation_type":"customer_driver","message_id":50,"sender_id":7,"sender_role":"driver","message":"","message_type":"image","image_path":"image.jpg","image_url":"https://api.example.com/api/files/image.jpg","created_at":"2026-09-10 14:37:06 +00:00:00"}}`)
 	const secret = "webhook-secret"
 	const timestamp = "1789051026"
 	const deliveryID = "3e1a6e70-3602-4a57-a092-078b2d8f22a1"
@@ -186,5 +189,8 @@ func TestChatWebhookVerificationAndParsing(t *testing.T) {
 	}
 	if event.Data.MessageID != 50 || event.Data.SenderRole != "driver" {
 		t.Fatalf("unexpected event: %+v", event)
+	}
+	if event.Data.ImageURL == nil || *event.Data.ImageURL != "https://api.example.com/api/files/image.jpg" {
+		t.Fatalf("webhook image URL = %v", event.Data.ImageURL)
 	}
 }

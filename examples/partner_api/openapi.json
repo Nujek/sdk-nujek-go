@@ -13,6 +13,7 @@
     { "name": "Pricing" },
     { "name": "Routing" },
     { "name": "Geocoding" },
+    { "name": "Reviews" },
     { "name": "Orders" },
     { "name": "Chat" }
   ],
@@ -63,6 +64,16 @@
         "parameters": [],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReverseGeocodeRequest" }, "example": { "latitude": 1.4748, "longitude": 124.8421 } } } },
         "responses": { "200": { "description": "Alamat ditemukan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReverseGeocodeResponse" }, "example": { "data": { "formatted": "Jalan Sam Ratulangi, Wenang, Manado, Sulawesi Utara, Indonesia", "address_line1": "Jalan Sam Ratulangi", "address_line2": "Wenang, Manado, Sulawesi Utara, Indonesia", "street": "Jalan Sam Ratulangi", "house_number": null, "city": "Manado", "district": "Wenang", "state": "Sulawesi Utara", "postcode": "95111", "country": "Indonesia", "country_code": "id", "latitude": 1.4748, "longitude": 124.8421, "result_type": "street", "provider": "geoapify" }, "message": "Alamat berhasil ditemukan" } } } }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/reviews": {
+      "post": {
+        "tags": ["Reviews"],
+        "summary": "Submit application review",
+        "operationId": "reviewApplication",
+        "parameters": [],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppReviewRequest" }, "example": { "customer_uuid": "24a55c29-5be8-4381-b915-3d658685a5a8", "category": "service", "rating": 5, "review": "Aplikasi sangat membantu" } } } },
+        "responses": { "200": { "description": "Review aplikasi berhasil dikirim", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppReviewResponse" }, "example": { "data": { "uuid": "76d64027-87e9-4566-bac3-e3a7f24f65ca", "customer_uuid": "24a55c29-5be8-4381-b915-3d658685a5a8", "category": "service", "rating": 5, "review": "Aplikasi sangat membantu", "status": "pending", "created_at": "2026-09-12T12:00:00Z", "updated_at": "2026-09-12T12:00:00Z" }, "message": "Review aplikasi berhasil dikirim" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
       }
     },
     "/orders": {
@@ -126,7 +137,7 @@
           { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
           { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 50 } }
         ],
-        "responses": { "200": { "description": "Daftar chat", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessagesResponse" }, "example": { "data": { "items": [{ "id": 50, "sender_id": 301, "sender_role": "driver", "message": "Saya menuju lokasi pickup", "message_type": "text", "image_path": null, "created_at": "2026-09-12T14:37:06Z", "is_read": false }], "total_items": 1, "total_pages": 1, "current_page": 1, "items_per_page": 50 }, "message": "Chat berhasil diambil" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+        "responses": { "200": { "description": "Daftar chat", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessagesResponse" }, "example": { "data": { "items": [{ "id": 50, "sender_id": 301, "sender_role": "driver", "message": "Saya menuju lokasi pickup", "message_type": "text", "image_path": null, "image_url": null, "created_at": "2026-09-12T14:37:06Z", "is_read": false }], "total_items": 1, "total_pages": 1, "current_page": 1, "items_per_page": 50 }, "message": "Chat berhasil diambil" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
       },
       "post": {
         "tags": ["Chat"],
@@ -134,7 +145,7 @@
         "operationId": "sendChatMessage",
         "parameters": [{ "$ref": "#/components/parameters/OrderUUID" }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SendChatMessageRequest" }, "example": { "message": "Driver, mohon ke pickup", "message_type": "text" } } } },
-        "responses": { "200": { "description": "Chat berhasil dikirim", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessageResponse" }, "example": { "data": { "id": 51, "sender_id": 201, "sender_role": "customer", "message": "Driver, mohon ke pickup", "message_type": "text", "image_path": null, "created_at": "2026-09-12T14:38:06Z", "is_read": false }, "message": "Chat berhasil dikirim" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+        "responses": { "200": { "description": "Chat berhasil dikirim", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessageResponse" }, "example": { "data": { "id": 51, "sender_id": 201, "sender_role": "customer", "message": "Driver, mohon ke pickup", "message_type": "text", "image_path": null, "image_url": null, "created_at": "2026-09-12T14:38:06Z", "is_read": false }, "message": "Chat berhasil dikirim" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
       }
     },
     "/orders/{order_uuid}/chat/read": {
@@ -154,7 +165,7 @@
         "operationId": "sendChatImage",
         "parameters": [{ "$ref": "#/components/parameters/OrderUUID" }],
         "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "$ref": "#/components/schemas/SendChatImageRequest" } } } },
-        "responses": { "200": { "description": "Gambar chat berhasil dikirim", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessageResponse" }, "example": { "data": { "id": 52, "sender_id": 201, "sender_role": "customer", "message": "Lokasi pickup saya", "message_type": "image", "image_path": "chat/83ca7ca8-a2ba-4efe-a247-89e15e23b312.jpg", "created_at": "2026-09-12T14:39:06Z", "is_read": false }, "message": "Gambar chat berhasil dikirim" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+        "responses": { "200": { "description": "Gambar chat berhasil dikirim", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChatMessageResponse" }, "example": { "data": { "id": 52, "sender_id": 201, "sender_role": "customer", "message": "Lokasi pickup saya", "message_type": "image", "image_path": "83ca7ca8-a2ba-4efe-a247-89e15e23b312.jpg", "image_url": "https://api.example.com/api/files/83ca7ca8-a2ba-4efe-a247-89e15e23b312.jpg", "created_at": "2026-09-12T14:39:06Z", "is_read": false }, "message": "Gambar chat berhasil dikirim" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" } }
       }
     }
   },
@@ -171,6 +182,9 @@
       "ReverseGeocodeRequest": { "type": "object", "required": ["latitude", "longitude"], "properties": { "latitude": { "type": "number", "format": "double", "minimum": -90, "maximum": 90 }, "longitude": { "type": "number", "format": "double", "minimum": -180, "maximum": 180 } } },
       "ReverseGeocodeData": { "type": "object", "properties": { "formatted": { "type": "string" }, "address_line1": { "type": "string", "nullable": true }, "address_line2": { "type": "string", "nullable": true }, "street": { "type": "string", "nullable": true }, "house_number": { "type": "string", "nullable": true }, "city": { "type": "string", "nullable": true }, "district": { "type": "string", "nullable": true }, "state": { "type": "string", "nullable": true }, "postcode": { "type": "string", "nullable": true }, "country": { "type": "string", "nullable": true }, "country_code": { "type": "string", "nullable": true }, "latitude": { "type": "number", "format": "double" }, "longitude": { "type": "number", "format": "double" }, "result_type": { "type": "string", "nullable": true }, "provider": { "type": "string" } } },
       "ReverseGeocodeResponse": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/ReverseGeocodeData" }, "message": { "type": "string" } } },
+      "AppReviewRequest": { "type": "object", "required": ["customer_uuid", "review"], "properties": { "customer_uuid": { "type": "string", "format": "uuid" }, "category": { "type": "string", "minLength": 1, "maxLength": 50, "default": "general" }, "rating": { "type": "integer", "minimum": 1, "maximum": 5, "nullable": true }, "review": { "type": "string", "minLength": 1, "maxLength": 5000 } } },
+      "AppReviewData": { "type": "object", "properties": { "uuid": { "type": "string", "format": "uuid" }, "customer_uuid": { "type": "string", "format": "uuid" }, "category": { "type": "string" }, "rating": { "type": "integer", "nullable": true }, "review": { "type": "string" }, "status": { "type": "string", "enum": ["pending", "read", "resolved", "rejected"] }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" } } },
+      "AppReviewResponse": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/AppReviewData" }, "message": { "type": "string" } } },
       "CreateOrderRequest": { "type": "object", "required": ["customer_uuid", "client_request_id", "service_id", "sub_service_id", "payment_method_id", "regency_id", "routes"], "properties": { "customer_uuid": { "type": "string", "format": "uuid" }, "client_request_id": { "type": "string", "format": "uuid" }, "service_id": { "type": "integer", "enum": [1, 2] }, "sub_service_id": { "type": "integer" }, "payment_method_id": { "type": "integer" }, "regency_id": { "type": "string" }, "driver_uuid": { "type": "string", "format": "uuid" }, "booking_at": { "type": "string", "format": "date-time", "description": "Waktu pickup booking. Jika diisi, jangan kirim driver_uuid." }, "merchant_uuid": { "type": "string", "format": "uuid" }, "routes": { "type": "array", "minItems": 2, "maxItems": 6, "items": { "$ref": "#/components/schemas/Waypoint" } }, "items": { "type": "array", "items": { "type": "object" } }, "voucher_code": { "type": "string" }, "delivery_detail": { "type": "object" } } },
       "CancelRequest": { "type": "object", "properties": { "reason": { "type": "string" } } },
       "ReviewRequest": { "type": "object", "required": ["rating"], "properties": { "rating": { "type": "integer", "minimum": 1, "maximum": 5 }, "comment": { "type": "string", "maxLength": 500 } } },
@@ -178,7 +192,7 @@
       "MarkChatReadRequest": { "type": "object", "required": ["last_read_message_id"], "properties": { "last_read_message_id": { "type": "integer", "format": "int64", "minimum": 1 } } },
       "MarkChatReadResponse": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/MarkChatReadRequest" }, "message": { "type": "string" } } },
       "SendChatImageRequest": { "type": "object", "required": ["file"], "properties": { "file": { "type": "string", "format": "binary", "description": "JPEG, PNG, GIF, atau WebP" }, "message": { "type": "string", "maxLength": 1000, "description": "Caption opsional" } } },
-      "ChatMessage": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64" }, "sender_id": { "type": "integer", "format": "int64" }, "sender_role": { "type": "string" }, "message": { "type": "string" }, "message_type": { "type": "string" }, "image_path": { "type": "string", "nullable": true }, "created_at": { "type": "string" }, "is_read": { "type": "boolean" } } },
+      "ChatMessage": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64" }, "sender_id": { "type": "integer", "format": "int64" }, "sender_role": { "type": "string" }, "message": { "type": "string" }, "message_type": { "type": "string" }, "image_path": { "type": "string", "nullable": true }, "image_url": { "type": "string", "format": "uri", "nullable": true }, "created_at": { "type": "string" }, "is_read": { "type": "boolean" } } },
       "ChatMessagesResponse": { "type": "object", "properties": { "data": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/ChatMessage" } }, "total_items": { "type": "integer" }, "total_pages": { "type": "integer" }, "current_page": { "type": "integer" }, "items_per_page": { "type": "integer" } } }, "message": { "type": "string" } } },
       "ChatMessageResponse": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/ChatMessage" }, "message": { "type": "string" } } },
       "GenericResponse": { "type": "object", "properties": { "data": {}, "message": { "type": "string" } } },

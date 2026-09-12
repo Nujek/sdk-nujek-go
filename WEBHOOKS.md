@@ -60,6 +60,7 @@ w.WriteHeader(http.StatusNoContent)
 | Event | Bentuk `data` |
 | --- | --- |
 | `order.created` | `OrderWebhookData` |
+| `order.booking_started` | `OrderWebhookData` |
 | `driver.accepted` | `OrderWebhookData` |
 | `driver.rejected` | `OrderWebhookData` |
 | `driver.cancelled` | `OrderWebhookData` |
@@ -80,6 +81,10 @@ w.WriteHeader(http.StatusNoContent)
 backend di masa depan tidak langsung merusak receiver. Gunakan
 `IsKnownWebhookEvent` bila aplikasi perlu membedakan event yang sudah didukung.
 
+Untuk event `chat.message`, payload menyertakan `image_path` dan `image_url`.
+Gunakan `image_url` untuk langsung menampilkan gambar; nilainya `null` pada pesan
+teks.
+
 Contoh payload order booking; `booking_at` bernilai `null` untuk order instan:
 
 ```json
@@ -94,6 +99,9 @@ Contoh payload order booking; `booking_at` bernilai `null` untuk order instan:
   }
 }
 ```
+
+Ketika driver mengakuisisi booking, event tetap `driver.accepted` untuk menjaga
+kompatibilitas receiver, dengan `data.status` bernilai `BOOKING_ACCEPTED`.
 
 Balas dengan status HTTP `2xx` hanya setelah event berhasil diterima. Nujek akan
 mencoba kembali delivery yang gagal, sehingga `X-Webhook-Id` wajib diproses secara

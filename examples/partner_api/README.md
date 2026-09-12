@@ -11,6 +11,7 @@ yang diteruskan oleh server example ini.
 | `Register` | `POST {{baseUrl}}/register` |
 | `PricingPreview` | `GET {{baseUrl}}/pricing` |
 | `RoutingDistance` | `POST {{baseUrl}}/routing` |
+| `ReviewApplication` | `POST {{baseUrl}}/reviews` |
 | `ReverseGeocode` | `POST {{baseUrl}}/geocoding/reverse` |
 | `CreateOrder` | `POST {{baseUrl}}/orders` |
 | `ListOrders` | `GET {{baseUrl}}/orders` |

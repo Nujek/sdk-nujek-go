@@ -353,15 +353,15 @@ data, message, err := api.ShowOrder(ctx, orderUUID)
     "logs": [
       {
         "from_status": "BOOKING",
-        "to_status": "ACCEPTED",
-        "description": "Driver accepted the order",
+        "to_status": "BOOKING_ACCEPTED",
+        "description": "Driver accepted the booking order",
         "timestamp": "2026-09-12T04:15:00Z"
       }
     ],
     "trackings": [],
     "total_distance_meters": 2450,
     "total_price": 21000,
-    "status": "ACCEPTED",
+    "status": "BOOKING_ACCEPTED",
     "booking_at": "2026-09-13T01:00:00Z",
     "created_at": "2026-09-12T04:00:00Z",
     "updated_at": "2026-09-12T04:15:00Z",
@@ -450,6 +450,7 @@ response, err := api.ListChatMessages(ctx, orderUUID, client.ChatMessagesParams{
         "message": "Saya menuju lokasi pickup",
         "message_type": "text",
         "image_path": null,
+        "image_url": null,
         "created_at": "2026-09-12T14:37:06Z",
         "is_read": false
       }
@@ -483,6 +484,7 @@ response, err := api.SendChatMessage(ctx, orderUUID, client.SendChatMessageReque
     "message": "Driver, mohon ke pickup",
     "message_type": "text",
     "image_path": null,
+    "image_url": null,
     "created_at": "2026-09-12T14:38:06Z",
     "is_read": false
   },
@@ -536,7 +538,8 @@ response, err := api.SendChatImage(ctx, orderUUID, client.SendChatImageRequest{
     "sender_role": "customer",
     "message": "Lokasi pickup saya",
     "message_type": "image",
-    "image_path": "chat/83ca7ca8-a2ba-4efe-a247-89e15e23b312.jpg",
+    "image_path": "83ca7ca8-a2ba-4efe-a247-89e15e23b312.jpg",
+    "image_url": "https://api.example.com/api/files/83ca7ca8-a2ba-4efe-a247-89e15e23b312.jpg",
     "created_at": "2026-09-12T14:39:06Z",
     "is_read": false
   },
@@ -579,6 +582,36 @@ response, err := api.ReverseGeocode(ctx, client.ReverseGeocodeRequest{
 ```
 
 Tipe hasil: `client.Response[client.ReverseGeocodeResponse]`.
+
+## 14. ReviewApplication
+
+```go
+rating := int16(5)
+response, err := api.ReviewApplication(ctx, client.AppReviewRequest{
+    CustomerUUID: "24a55c29-5be8-4381-b915-3d658685a5a8",
+    Category:     "service",
+    Rating:       &rating,
+    Review:       "Aplikasi sangat membantu",
+})
+```
+
+```json
+{
+  "data": {
+    "uuid": "76d64027-87e9-4566-bac3-e3a7f24f65ca",
+    "customer_uuid": "24a55c29-5be8-4381-b915-3d658685a5a8",
+    "category": "service",
+    "rating": 5,
+    "review": "Aplikasi sangat membantu",
+    "status": "pending",
+    "created_at": "2026-09-12T12:00:00Z",
+    "updated_at": "2026-09-12T12:00:00Z"
+  },
+  "message": "Review aplikasi berhasil dikirim"
+}
+```
+
+Tipe hasil: `client.Response[client.AppReview]`.
 
 ## Response error
 

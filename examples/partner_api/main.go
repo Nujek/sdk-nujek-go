@@ -35,6 +35,7 @@ func main() {
 	mux.HandleFunc("POST /register", h.register)
 	mux.HandleFunc("GET /pricing", h.pricingPreview)
 	mux.HandleFunc("POST /routing", h.routingDistance)
+	mux.HandleFunc("POST /reviews", h.reviewApplication)
 	mux.HandleFunc("POST /geocoding/reverse", h.reverseGeocode)
 	mux.HandleFunc("POST /orders", h.createOrder)
 	mux.HandleFunc("GET /orders", h.listOrders)
@@ -155,6 +156,15 @@ func (s *server) reviewDriver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"data": result, "message": message})
+}
+
+func (s *server) reviewApplication(w http.ResponseWriter, r *http.Request) {
+	var payload client.AppReviewRequest
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	result, err := s.api.ReviewApplication(r.Context(), payload)
+	writeResult(w, result, err)
 }
 
 func (s *server) listChatMessages(w http.ResponseWriter, r *http.Request) {
