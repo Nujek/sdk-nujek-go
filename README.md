@@ -2,12 +2,12 @@
 
 SDK Go untuk Partner API Nujek. SDK otomatis membuat signature HMAC-SHA256
 dengan header `X-Client-Key`, `X-Timestamp`, `X-Nonce`, dan `X-Signature`.
-Rilis terbaru: `v0.1.9`.
+Rilis terbaru: `v0.1.10`.
 
 ## Instalasi
 
 ```bash
-go get github.com/Nujek/sdk-nujek-go@v0.1.9
+go get github.com/Nujek/sdk-nujek-go@v0.1.10
 ```
 
 ## Method SDK dan endpoint upstream
@@ -49,7 +49,8 @@ sent, err := api.SendChatMessage(ctx, orderUUID, client.SendChatMessageRequest{
 ```
 
 Pesan driver diteruskan ke webhook partner sebagai event `chat.message`. Gunakan
-`VerifyWebhookSignature` pada raw request body sebelum `ParseChatMessageWebhook`.
+`VerifyWebhook` pada raw request body sebelum `ParseWebhook`. Daftar seluruh
+event, model payload, dan contoh receiver tersedia di [WEBHOOKS.md](./WEBHOOKS.md).
 
 ## Example untuk Postman
 
