@@ -37,6 +37,8 @@ func main() {
 	mux.HandleFunc("POST /routing", h.routingDistance)
 	mux.HandleFunc("POST /reviews", h.reviewApplication)
 	mux.HandleFunc("POST /geocoding/reverse", h.reverseGeocode)
+	mux.HandleFunc("GET /services", h.services)
+	mux.HandleFunc("GET /nearby-drivers", h.nearbyDrivers)
 	mux.HandleFunc("POST /orders", h.createOrder)
 	mux.HandleFunc("GET /orders", h.listOrders)
 	mux.HandleFunc("GET /orders/{orderUUID}", h.showOrder)
@@ -94,6 +96,44 @@ func (s *server) reverseGeocode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := s.api.ReverseGeocode(r.Context(), payload)
+	writeResult(w, result, err)
+}
+
+func (s *server) services(w http.ResponseWriter, r *http.Request) {
+	latitude, err := strconv.ParseFloat(r.URL.Query().Get("latitude"), 64)
+	if err != nil {
+		writeError(w, errors.New("latitude harus berupa angka"))
+		return
+	}
+	longitude, err := strconv.ParseFloat(r.URL.Query().Get("longitude"), 64)
+	if err != nil {
+		writeError(w, errors.New("longitude harus berupa angka"))
+		return
+	}
+	result, err := s.api.Services(r.Context(), client.ServicesRequest{Latitude: latitude, Longitude: longitude})
+	writeResult(w, result, err)
+}
+
+func (s *server) nearbyDrivers(w http.ResponseWriter, r *http.Request) {
+	latitude, err := strconv.ParseFloat(r.URL.Query().Get("latitude"), 64)
+	if err != nil {
+		writeError(w, errors.New("latitude harus berupa angka"))
+		return
+	}
+	longitude, err := strconv.ParseFloat(r.URL.Query().Get("longitude"), 64)
+	if err != nil {
+		writeError(w, errors.New("longitude harus berupa angka"))
+		return
+	}
+	subServiceID, err := strconv.Atoi(r.URL.Query().Get("sub_service_id"))
+	if err != nil {
+		writeError(w, errors.New("sub_service_id harus berupa angka"))
+		return
+	}
+	radius, _ := strconv.ParseFloat(r.URL.Query().Get("radius_km"), 64)
+	result, err := s.api.NearbyDrivers(r.Context(), client.NearbyDriversRequest{
+		Latitude: latitude, Longitude: longitude, SubServiceID: subServiceID, RadiusKM: radius,
+	})
 	writeResult(w, result, err)
 }
 

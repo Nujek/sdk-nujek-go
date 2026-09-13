@@ -2,7 +2,7 @@
 
 SDK Go untuk Partner API Nujek. SDK otomatis membuat signature HMAC-SHA256
 dengan header `X-Client-Key`, `X-Timestamp`, `X-Nonce`, dan `X-Signature`.
-Rilis terbaru: `v0.1.12`.
+Rilis terbaru: `v0.1.13`.
 
 Contoh JSON response sukses untuk **setiap method SDK**, response kosong, dan
 seluruh bentuk error tersedia di [API_RESPONSES.md](./API_RESPONSES.md).
@@ -10,7 +10,7 @@ seluruh bentuk error tersedia di [API_RESPONSES.md](./API_RESPONSES.md).
 ## Instalasi
 
 ```bash
-go get github.com/Nujek/sdk-nujek-go@v0.1.12
+go get github.com/Nujek/sdk-nujek-go@v0.1.13
 ```
 
 ## Method SDK dan endpoint upstream
@@ -20,6 +20,8 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.12
 | `Register` | `POST /api/client/register` |
 | `RoutingDistance` | `POST /api/client/routing/distance` |
 | `ReverseGeocode` | `POST /api/client/geocoding/reverse` |
+| `Services` | `GET /api/client/services` |
+| `NearbyDrivers` | `GET /api/client/nearby-drivers` |
 | `PricingPreview` | `GET /api/client/pricing/preview` |
 | `ReviewApplication` | `POST /api/client/reviews` |
 | `CreateOrder` | `POST /api/client/orders` |
@@ -32,7 +34,7 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.12
 | `MarkChatRead` | `POST /api/client/orders/{order_uuid}/chat/customer_driver/read` |
 | `SendChatImage` | `POST /api/client/orders/{order_uuid}/chat/customer_driver/images` |
 
-Seluruh 14 method di atas memiliki contoh response yang dapat langsung dipakai
+Seluruh method di atas memiliki contoh response yang dapat langsung dipakai
 sebagai fixture di [API_RESPONSES.md](./API_RESPONSES.md).
 
 ```go
@@ -58,6 +60,35 @@ review, err := api.ReviewApplication(ctx, client.AppReviewRequest{
 `CreateOrder` menerima `map[string]any` agar field order baru tetap kompatibel.
 `PricingPreview` mengembalikan data pricing sebagai `json.RawMessage`.
 
+#### Booking order
+
+Client API mendukung order terjadwal melalui field `booking_at` pada payload
+`CreateOrder`. Nilainya harus berupa timestamp RFC 3339 dengan timezone dan
+harus berada di masa depan. Untuk booking, jangan kirim `driver_uuid`; order
+akan dibuat dengan status `BOOKING` dan pencarian driver dilakukan saat jadwal
+booking tiba. Client API saat ini menerima `service_id` `1` atau `2`.
+
+```go
+data, message, err := api.CreateOrder(ctx, map[string]any{
+    "customer_uuid":     customerUUID,
+    "client_request_id": requestID,
+    "service_id":        1,
+    "sub_service_id":    1,
+    "payment_method_id": 1,
+    "regency_id":        "7171",
+    "booking_at":        "2026-09-14T10:00:00+08:00",
+    "routes": []map[string]any{
+        {"latitude": -7.250445, "longitude": 112.768845, "address": "Pickup"},
+        {"latitude": -7.260000, "longitude": 112.780000, "address": "Tujuan"},
+    },
+})
+```
+
+Pada JSON di `data`, gunakan field `status == "BOOKING"` dan `booking_at`
+untuk menampilkan status serta waktu pickup terjadwal. Karena `CreateOrder`
+mengembalikan `json.RawMessage`, unmarshal `data` ke struct aplikasi Anda bila
+membutuhkan akses field bertipe.
+
 `CreateOrder` otomatis mengisi `routes[].address` melalui reverse geocoding
 ketika address tidak dikirim, kosong, atau hanya berisi spasi.
 
@@ -67,6 +98,34 @@ address, err := api.ReverseGeocode(ctx, client.ReverseGeocodeRequest{
 })
 fmt.Println(address.Data.Formatted)
 ```
+
+Untuk mengambil kota dan daftar layanan beserta tarif serta sub-service:
+
+```go
+services, err := api.Services(ctx, client.ServicesRequest{
+    Latitude: 1.4748, Longitude: 124.8421,
+})
+if err != nil { log.Fatal(err) }
+fmt.Println(services.Data.City.ID, services.Data.City.Name)
+```
+
+`Services` memilih tarif regional terlebih dahulu. Jika tidak tersedia, field
+`tariff.scope` bernilai `default` dan SDK menggunakan tarif default layanan.
+Response juga memuat `city.id`, `city.name`, dan `sub_services[].nearby_drivers_count`.
+
+Untuk mencari driver tersedia pada sub-service tertentu:
+
+```go
+drivers, err := api.NearbyDrivers(ctx, client.NearbyDriversRequest{
+    Latitude: 1.4748, Longitude: 124.8421,
+    SubServiceID: 1, RadiusKM: 5,
+})
+```
+
+`NearbyDrivers` memerlukan `latitude`, `longitude`, dan `sub_service_id`.
+`radius_km` opsional dengan default 5 km dan maksimum 100 km. Setiap driver
+yang dikembalikan sudah online, aktif, berada dalam radius, dan eligible untuk
+sub-service tersebut. Foto driver tersedia pada field `image_url`.
 
 ```go
 messages, err := api.ListChatMessages(ctx, orderUUID, client.ChatMessagesParams{

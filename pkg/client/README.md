@@ -21,12 +21,17 @@ route, err := partner.RoutingDistance(ctx, client.RoutingRequest{
 ```
 
 Method yang tersedia: `Register`, `PricingPreview`, `RoutingDistance`, `ReverseGeocode`,
-`CreateOrder`, `ListOrders`, `ShowOrder`, `CancelOrder`, `ReviewDriver`,
+`Services`, `NearbyDrivers`, `CreateOrder`, `ListOrders`, `ShowOrder`, `CancelOrder`, `ReviewDriver`,
 `ListChatMessages`, `SendChatMessage`, `MarkChatRead`, dan `SendChatImage`.
 `CreateOrder` menerima object
 JSON apa pun selama memuat `customer_uuid` dan field order yang diwajibkan API.
 Jika `routes[].address` kosong atau tidak dikirim, Partner API mengisinya
 otomatis dari koordinat sebelum menyimpan order.
+
+Untuk membuat booking, tambahkan `booking_at` sebagai timestamp RFC 3339 dengan
+timezone, misalnya `2026-09-14T10:00:00+08:00`. Waktu harus di masa depan dan
+`driver_uuid` tidak boleh dikirim. Order akan berstatus `BOOKING` sampai waktu
+booking tiba. Client API saat ini mendukung `service_id` `1` dan `2` untuk order.
 
 Contoh response sukses dan error untuk setiap method tersedia di
 [`API_RESPONSES.md`](../../API_RESPONSES.md). Dokumentasi tersebut juga
@@ -44,3 +49,16 @@ Jalankan dengan `CLIENT_API_BASE_URL`, `CLIENT_API_KEY`, dan `CLIENT_API_SECRET`
 
 `New` menerima `WithHTTPClient`, `WithClock`, dan `WithNonceGenerator` untuk
 custom transport atau testing.
+
+`Services(ctx, ServicesRequest{Latitude: ..., Longitude: ...})` mengembalikan
+kota terdekat, tarif layanan yang berlaku (`regional` atau `default`), dan
+sub-service beserta persentase serta biaya tetapnya.
+
+`NearbyDrivers` membutuhkan `SubServiceID` dan koordinat. `RadiusKM` opsional;
+nilai nol memakai radius default server 5 km. Nilai maksimum radius adalah 100
+km. Response hanya berisi driver online dan eligible untuk sub-service tersebut,
+serta menggunakan `image_url` untuk link foto driver.
+
+`Services` menerima latitude dan longitude, lalu mengembalikan kota terdekat,
+tarif regional/default, daftar service, sub-service, dan
+`nearby_drivers_count` pada setiap sub-service.

@@ -130,6 +130,11 @@ Tipe hasil: `client.Response[client.RoutingResponse]`.
 Contoh ini menggunakan order booking. Untuk order instan, hilangkan
 `booking_at`.
 
+`booking_at` harus berupa timestamp RFC 3339 dengan timezone dan berada di masa
+depan. Jangan kirim `driver_uuid` pada booking. Client API saat ini hanya
+mendukung `service_id` `1` dan `2`. Booking dibuat dengan status `BOOKING` dan
+`driver` bernilai `null` sampai proses pencarian driver dimulai.
+
 ```go
 data, message, err := api.CreateOrder(ctx, map[string]any{
     "customer_uuid": "24a55c29-5be8-4381-b915-3d658685a5a8",
@@ -665,3 +670,95 @@ if errors.As(err, &apiErr) {
 
 Nilai `Code` dapat kosong karena backend utama saat ini tidak selalu mengirim
 kode error terpisah. `StatusCode`, `Message`, dan field validasi tetap tersedia.
+
+## Services
+
+```go
+response, err := api.Services(ctx, client.ServicesRequest{
+    Latitude: 1.4748, Longitude: 124.8421,
+})
+```
+
+```json
+{
+  "data": {
+    "latitude": 1.4748,
+    "longitude": 124.8421,
+    "city": {"id": "7171", "name": "Kota Manado", "distance_km": 1.2},
+    "services": [
+      {
+        "id": 1,
+        "name": "Ride",
+        "is_available": true,
+        "is_available_register": true,
+        "max_radius": 25,
+        "screen": "AppScreen",
+        "tariff": {
+          "id": 10,
+          "first_km": 1,
+          "first_km_price": 10000,
+          "next_km_price": 3000,
+          "driver_radius_km": 5,
+          "commission_percent": 10,
+          "commission_flat": 0,
+          "max_distance_km": 40,
+          "incentive_fee": 0,
+          "is_available": true,
+          "scope": "default"
+        },
+        "sub_services": [
+          {"id": 1, "service_id": 1, "name": "Ride", "price_percentage": 100, "price_flat": 0, "is_available": true, "sort_order": 1, "nearby_drivers_count": 3}
+        ]
+      }
+    ]
+  },
+  "message": "Daftar layanan berhasil ditemukan"
+}
+```
+
+Tipe hasil: `client.Response[client.ServicesResponse]`. `tariff.scope` bernilai
+`regional` jika ada override tarif kota, atau `default` jika menggunakan tarif
+umum layanan. `price_percentage` dan `price_flat` pada sub-service adalah
+penyesuaian biaya sub-service.
+
+## NearbyDrivers
+
+```go
+response, err := api.NearbyDrivers(ctx, client.NearbyDriversRequest{
+    Latitude: 1.4748, Longitude: 124.8421,
+    SubServiceID: 1, RadiusKM: 5,
+})
+```
+
+Endpoint upstream: `GET /api/client/nearby-drivers` dengan query
+`latitude`, `longitude`, `sub_service_id`, dan optional `radius_km`.
+
+```json
+{
+  "data": [
+    {
+      "uuid": "ed731079-953e-4af0-9d84-3401173e8dd0",
+      "latitude": 1.4749,
+      "longitude": 124.8422,
+      "status": "ONLINE",
+      "service_id": 1,
+      "service_name": "Ride",
+      "sub_service_id": 2,
+      "sub_service_name": "Ride XL",
+      "distance_meters": 250.5,
+      "updated_at": "2026-09-13T04:04:43.336483Z",
+      "last_seen_minutes_ago": 0.08,
+      "full_name": "Udin",
+      "image_url": "https://staging-api.nujek.co.id/api/files/driver.jpg",
+      "work_area_id": "7171",
+      "work_area_name": "Kota Manado"
+    }
+  ],
+  "message": "Driver terdekat berhasil ditemukan"
+}
+```
+
+Tipe hasil: `client.Response[[]client.NearbyDriver]`. Driver yang dikembalikan
+sudah berstatus online, aktif, berada dalam radius, dan memenuhi filter
+`sub_service_id`. `image_url` dapat bernilai `null` jika driver belum memiliki
+foto.

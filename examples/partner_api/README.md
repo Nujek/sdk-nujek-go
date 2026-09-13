@@ -13,6 +13,8 @@ yang diteruskan oleh server example ini.
 | `RoutingDistance` | `POST {{baseUrl}}/routing` |
 | `ReviewApplication` | `POST {{baseUrl}}/reviews` |
 | `ReverseGeocode` | `POST {{baseUrl}}/geocoding/reverse` |
+| `Services` | `GET {{baseUrl}}/services?latitude=1.4748&longitude=124.8421` |
+| `NearbyDrivers` | `GET {{baseUrl}}/nearby-drivers?latitude=1.4748&longitude=124.8421&sub_service_id=1` |
 | `CreateOrder` | `POST {{baseUrl}}/orders` |
 | `ListOrders` | `GET {{baseUrl}}/orders` |
 | `ShowOrder` | `GET {{baseUrl}}/orders/{order_uuid}` |
@@ -120,6 +122,24 @@ Route lokal lainnya adalah `POST /geocoding/reverse`, `GET /orders`, `GET /order
 `POST /orders/{order_uuid}/review-driver`, serta `GET`/`POST
 `/orders/{order_uuid}/chat/messages`; body-nya sama dengan contoh
 SDK di bawah.
+
+### Services
+
+```http
+GET http://localhost:8088/services?latitude=1.4748&longitude=124.8421
+```
+
+Response berisi kota terdekat, tarif yang berlaku, daftar sub-service, dan
+`nearby_drivers_count` pada setiap sub-service.
+
+### Nearby drivers
+
+```http
+GET http://localhost:8088/nearby-drivers?latitude=1.4748&longitude=124.8421&sub_service_id=1&radius_km=5
+```
+
+Response hanya berisi driver online yang eligible untuk `sub_service_id` dan
+menyediakan link foto melalui field `image_url`.
 
 ## Penggunaan setiap API
 
