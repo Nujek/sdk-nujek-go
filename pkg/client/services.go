@@ -12,6 +12,7 @@ import (
 type ServicesRequest struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
+	ServiceID *int    `json:"service_id,omitempty"`
 }
 
 // ServicesResponse contains the city resolved from the coordinates and the
@@ -86,6 +87,12 @@ func (c *Client) Services(ctx context.Context, request ServicesRequest) (Respons
 	query := url.Values{}
 	query.Set("latitude", strconv.FormatFloat(request.Latitude, 'f', -1, 64))
 	query.Set("longitude", strconv.FormatFloat(request.Longitude, 'f', -1, 64))
+	if request.ServiceID != nil {
+		if *request.ServiceID <= 0 {
+			return response, errors.New("service ID harus lebih dari nol")
+		}
+		query.Set("service_id", strconv.Itoa(*request.ServiceID))
+	}
 	err := c.request(ctx, http.MethodGet, "/services", query, nil, &response)
 	return response, err
 }

@@ -20,7 +20,7 @@ go get github.com/Nujek/sdk-nujek-go@v0.1.13
 | `Register` | `POST /api/client/register` |
 | `RoutingDistance` | `POST /api/client/routing/distance` |
 | `ReverseGeocode` | `POST /api/client/geocoding/reverse` |
-| `Services` | `GET /api/client/services` |
+| `Services` | `GET /api/client/services?latitude=...&longitude=...&service_id=...` |
 | `NearbyDrivers` | `GET /api/client/nearby-drivers` |
 | `PricingPreview` | `GET /api/client/pricing/preview` |
 | `ReviewApplication` | `POST /api/client/reviews` |
@@ -112,6 +112,8 @@ fmt.Println(services.Data.City.ID, services.Data.City.Name)
 `Services` memilih tarif regional terlebih dahulu. Jika tidak tersedia, field
 `tariff.scope` bernilai `default` dan SDK menggunakan tarif default layanan.
 Response juga memuat `city.id`, `city.name`, dan `sub_services[].nearby_drivers_count`.
+Gunakan `ServiceID: &serviceID` untuk mengembalikan satu service saja; jika
+kosong, semua service dikembalikan.
 
 Untuk mencari driver tersedia pada sub-service tertentu:
 

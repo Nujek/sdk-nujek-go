@@ -110,7 +110,18 @@ func (s *server) services(w http.ResponseWriter, r *http.Request) {
 		writeError(w, errors.New("longitude harus berupa angka"))
 		return
 	}
-	result, err := s.api.Services(r.Context(), client.ServicesRequest{Latitude: latitude, Longitude: longitude})
+	var serviceID *int
+	if rawServiceID := r.URL.Query().Get("service_id"); rawServiceID != "" {
+		parsedServiceID, parseErr := strconv.Atoi(rawServiceID)
+		if parseErr != nil {
+			writeError(w, errors.New("service_id harus berupa angka"))
+			return
+		}
+		serviceID = &parsedServiceID
+	}
+	result, err := s.api.Services(r.Context(), client.ServicesRequest{
+		Latitude: latitude, Longitude: longitude, ServiceID: serviceID,
+	})
 	writeResult(w, result, err)
 }
 

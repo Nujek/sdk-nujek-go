@@ -679,6 +679,10 @@ response, err := api.Services(ctx, client.ServicesRequest{
 })
 ```
 
+Endpoint upstream: `GET /api/client/services` dengan query wajib `latitude`
+dan `longitude`, serta query opsional `service_id`. Jika `service_id` dikirim,
+hanya service dengan ID tersebut yang dikembalikan.
+
 ```json
 {
   "data": {

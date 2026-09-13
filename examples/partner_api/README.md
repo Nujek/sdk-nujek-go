@@ -13,7 +13,7 @@ yang diteruskan oleh server example ini.
 | `RoutingDistance` | `POST {{baseUrl}}/routing` |
 | `ReviewApplication` | `POST {{baseUrl}}/reviews` |
 | `ReverseGeocode` | `POST {{baseUrl}}/geocoding/reverse` |
-| `Services` | `GET {{baseUrl}}/services?latitude=1.4748&longitude=124.8421` |
+| `Services` | `GET {{baseUrl}}/services?latitude=1.4748&longitude=124.8421&service_id=1` |
 | `NearbyDrivers` | `GET {{baseUrl}}/nearby-drivers?latitude=1.4748&longitude=124.8421&sub_service_id=1` |
 | `CreateOrder` | `POST {{baseUrl}}/orders` |
 | `ListOrders` | `GET {{baseUrl}}/orders` |
@@ -126,7 +126,7 @@ SDK di bawah.
 ### Services
 
 ```http
-GET http://localhost:8088/services?latitude=1.4748&longitude=124.8421
+GET http://localhost:8088/services?latitude=1.4748&longitude=124.8421&service_id=1
 ```
 
 Response berisi kota terdekat, tarif yang berlaku, daftar sub-service, dan

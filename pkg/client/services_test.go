@@ -27,6 +27,18 @@ func TestServices(t *testing.T) {
 	}
 }
 
+func TestServicesFiltersByServiceID(t *testing.T) {
+	transport := &chatCaptureTransport{responseBody: `{"data":{"services":[{"id":1}]}}`}
+	c := newChatTestClient(t, transport)
+	serviceID := 1
+	if _, err := c.Services(context.Background(), ServicesRequest{Latitude: 1, Longitude: 124, ServiceID: &serviceID}); err != nil {
+		t.Fatal(err)
+	}
+	if got := transport.request.URL.Query().Get("service_id"); got != "1" {
+		t.Fatalf("service_id query = %q", got)
+	}
+}
+
 func TestServicesRejectsInvalidCoordinates(t *testing.T) {
 	c := newChatTestClient(t, &chatCaptureTransport{})
 	if _, err := c.Services(context.Background(), ServicesRequest{Latitude: math.NaN(), Longitude: 124}); err == nil {
